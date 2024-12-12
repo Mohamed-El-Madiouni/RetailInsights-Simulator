@@ -22,27 +22,41 @@ class RetailDataGenerator:
         date = datetime.strptime(date_str, "%Y-%m-%d")
         day_of_week = date.weekday()  # 0 = lundi, 6 = dimanche
 
-        # Générer le nombre de visiteurs basé sur l'heure
-        if 0 <= hour < 7:  # De minuit à 6h, pas trafic
-            visitors = 0
-            sales = 0
-        elif 7 <= hour < 8:  # Le matin avant 8h, peu de trafic
-            visitors = random.randint(100, 200)
-            sales = random.randint(5, 20)
-        elif 8 <= hour < 20:  # Période de grande affluence (de 8h à 19h)
-            visitors = random.randint(300, self.max_visitors)
-            sales = random.randint(30, self.max_sales)
-        elif 20 <= hour < 22:  # Après 19h, trafic plus faible
-            visitors = random.randint(self.min_visitors, 150)
-            sales = random.randint(5, 25)
-        else: # Après 22h, fermeture du magasin
-            visitors = 0
-            sales = 0
+        # Pour ajouter des valeurs aberrantes ou nulles, on fait un choix aléatoire
+        is_null = random.random() < 0.002  # 0.5% de chance d'avoir une donnée nulle
+        is_aberrant = random.random() < 0.001  # 0.3% de chance d'avoir une donnée aberrante
+
+        # Si la donnée est nulle
+        if is_null:
+            visitors = None
+            sales = None
+        else:
+            # Générer le nombre de visiteurs basé sur l'heure
+            if 0 <= hour < 7:  # De minuit à 6h, pas trafic
+                visitors = 0
+                sales = 0
+            elif 7 <= hour < 8:  # Le matin avant 8h, peu de trafic
+                visitors = random.randint(100, 200)
+                sales = random.randint(5, 20)
+            elif 8 <= hour < 20:  # Période de grande affluence (de 8h à 19h)
+                visitors = random.randint(300, self.max_visitors)
+                sales = random.randint(30, self.max_sales)
+            elif 20 <= hour < 22:  # Après 19h, trafic plus faible
+                visitors = random.randint(self.min_visitors, 150)
+                sales = random.randint(5, 25)
+            else:  # Après 22h, fermeture du magasin
+                visitors = 0
+                sales = 0
+
+            # Si la donnée est aberrante
+            if is_aberrant:
+                visitors = random.randint(10000, 50000)  # Valeur aberrante pour les visiteurs
+                sales = random.randint(1000, 5000)  # Valeur aberrante pour les ventes
 
         # Pour rendre l'exemple plus crédible, augmenter les visites et ventes le week-end
         if day_of_week in [5, 6]:  # Le week-end a tendance à avoir plus de monde
-            visitors = int(visitors * 1.25)  # Augmenter le trafic le week-end
-            sales = int(sales * 1.15)  # Augmenter les ventes le week-end
+            visitors = int(visitors * 1.25) if visitors is not None else None  # Augmenter le trafic le week-end
+            sales = int(sales * 1.15) if sales is not None else None  # Augmenter les ventes le week-end
 
         return visitors, sales
 
