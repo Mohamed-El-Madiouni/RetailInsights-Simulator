@@ -1,11 +1,15 @@
+import json
+import os
 from faker import Faker
 import random
+from io import TextIOWrapper
 
 
 class ClientGenerator:
     def __init__(self):
         self.fake = Faker()
         self.clients = []
+        self.cities = ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse']  # Liste des villes
 
     def generate_clients(self, num_clients=20000):
         """
@@ -24,13 +28,32 @@ class ClientGenerator:
 
             gender = random.choice(['Homme', 'Femme'])
             has_loyalty_card = random.random() < 0.3  # 30% des clients ont une carte de fidélité
+
+            # Choisir une ville aléatoire
+            city = random.choice(self.cities)
+
+            # Ajouter les informations du client
             self.clients.append({
                 'id': self.fake.uuid4(),
                 'name': name,
                 'age': age,
                 'gender': gender,
-                'loyalty_card': has_loyalty_card
+                'loyalty_card': has_loyalty_card,
+                'city': city
             })
+
+    def save_clients(self, filename="clients.json"):
+        """Sauvegarde les clients dans un fichier JSON dans le dossier 'data'."""
+        # Vérifie si le dossier 'data' existe, sinon le crée
+        os.makedirs('data', exist_ok=True)
+
+        # Définir le chemin du fichier dans le dossier 'data'
+        filepath = os.path.join('data', filename)
+
+        # Sauvegarde les données dans un fichier JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.clients, f, ensure_ascii=False, indent=4)
 
     def get_clients(self):
         return self.clients
@@ -40,6 +63,5 @@ class ClientGenerator:
 if __name__ == "__main__":
     client_generator = ClientGenerator()
     client_generator.generate_clients()
-    for client in client_generator.get_clients():
-        print(f"ID: {client['id']}, Nom: {client['name']}, Age: {client['age']}, Genre: {client['gender']}, "
-              f"Carte de fidélité: {client['loyalty_card']}")
+    client_generator.save_clients()  # Sauvegarde les clients dans le fichier JSON
+    print("Clients sauvegardés dans le dossier 'data'.")

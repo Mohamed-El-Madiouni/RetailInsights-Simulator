@@ -1,5 +1,8 @@
 import random
 import uuid
+import json
+import os
+from io import TextIOWrapper
 
 
 class StoreGenerator:
@@ -27,6 +30,19 @@ class StoreGenerator:
                 'closing_hour': closing_hour
             })
 
+    def save_stores(self, filename="stores.json"):
+        """Sauvegarde les magasins dans un fichier JSON dans le dossier 'data'."""
+        # Vérifie si le dossier 'data' existe, sinon le crée
+        os.makedirs('data', exist_ok=True)
+
+        # Définir le chemin du fichier dans le dossier 'data'
+        filepath = os.path.join('data', filename)
+
+        # Sauvegarde les données dans un fichier JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.stores, f, ensure_ascii=False, indent=4)
+
     def get_stores(self):
         return self.stores
 
@@ -35,7 +51,5 @@ class StoreGenerator:
 if __name__ == "__main__":
     store_generator = StoreGenerator()
     store_generator.generate_stores()
-    for store in store_generator.get_stores():
-        print(f"ID: {store['id']}, Name: {store['name']}, Location: {store['location']}, "
-              f"Capacity: {store['capacity']}, Opening Hour: {store['opening_hour']}, "
-              f"Closing Hour: {store['closing_hour']}")
+    store_generator.save_stores()  # Sauvegarde les magasins dans le fichier JSON
+    print("Magasins sauvegardés dans le dossier 'data'.")

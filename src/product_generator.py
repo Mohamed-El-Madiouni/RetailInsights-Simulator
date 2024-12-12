@@ -1,5 +1,8 @@
 import random
 import uuid
+import json
+import os
+from io import TextIOWrapper
 
 
 class ProductGenerator:
@@ -12,7 +15,7 @@ class ProductGenerator:
 
     def generate_products(self, num_products=50):
         """
-        Génère une liste de produits avec des catégories et des prix aléatoires.
+        Génère une liste de produits avec des catégories, des prix et un coût aléatoire.
         """
         for i in range(num_products):
             product_name = random.choice(self.product_names)
@@ -58,13 +61,30 @@ class ProductGenerator:
             # Utilise le compteur pour créer un nom unique pour ce type de produit
             product_name_with_index = f"{product_name}_{self.product_counters[product_name]}"
 
-            # Ajout du produit à la liste
+            # Calculer le coût entre 50% et 80% du prix de vente
+            cost = round(price * random.uniform(0.5, 0.8), 2)
+
+            # Ajout du produit à la liste avec le champ 'cost'
             self.products.append({
                 'id': str(uuid.uuid4()),
                 'name': product_name_with_index,
                 'category': category,
-                'price': price
+                'price': price,
+                'cost': cost
             })
+
+    def save_products(self, filename="products.json"):
+        """Sauvegarde les produits dans un fichier JSON dans le dossier 'data'."""
+        # Vérifie si le dossier 'data' existe, sinon le crée
+        os.makedirs('data', exist_ok=True)
+
+        # Définir le chemin du fichier dans le dossier 'data'
+        filepath = os.path.join('data', filename)
+
+        # Sauvegarde les données dans un fichier JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.products, f, ensure_ascii=False, indent=4)
 
     def get_products(self):
         return self.products
@@ -74,6 +94,5 @@ class ProductGenerator:
 if __name__ == "__main__":
     product_generator = ProductGenerator()
     product_generator.generate_products()
-    for product in product_generator.get_products():
-        print(
-            f"ID: {product['id']}, Name: {product['name']}, Category: {product['category']}, Price: {product['price']}")
+    product_generator.save_products()  # Sauvegarde les produits dans le fichier JSON
+    print("Produits sauvegardés dans le dossier 'data'.")
