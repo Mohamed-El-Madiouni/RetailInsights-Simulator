@@ -2,6 +2,7 @@ import random
 import uuid
 import json
 from io import TextIOWrapper
+import os
 
 
 def load_products():
@@ -43,7 +44,7 @@ class SaleGenerator:
         self.clients = load_clients()
         self.stores = load_stores()
         self.sales = []
-        self.date_str = date_str  # La date de la vente sera un paramètre d'entrée
+        self.date_str = date_str
         self.num_sales = num_sales
 
     def generate_sales(self):
@@ -104,9 +105,20 @@ class SaleGenerator:
 
     def save_sales_to_file(self):
         """Sauvegarder les ventes générées dans un fichier JSON."""
-        with open('data/sales.json', 'w', encoding='utf-8') as f:
-            assert isinstance(f, TextIOWrapper)
-            json.dump(self.sales, f, ensure_ascii=False, indent=4)
+        if os.path.exists('data/sales.json'):
+            # Charger les données existantes si le fichier existe
+            with open('data/sales.json', 'r', encoding='utf-8') as f:
+                existing_sales = json.load(f)
+            # Ajouter les nouvelles ventes aux données existantes
+            existing_sales.extend(self.sales)
+            with open('data/sales.json', 'w', encoding='utf-8') as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(existing_sales, f, ensure_ascii=False, indent=4)
+        else:
+            # Si le fichier n'existe pas, créer un nouveau fichier avec les données
+            with open('data/sales.json', 'w', encoding='utf-8') as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(self.sales, f, ensure_ascii=False, indent=4)
 
 
 # Exemple d'utilisation

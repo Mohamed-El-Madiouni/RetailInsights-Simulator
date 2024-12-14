@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 import json
 from io import TextIOWrapper
+import os
 
 
 def load_stores():
@@ -90,9 +91,17 @@ class RetailDataGenerator:
 
     def save_data_to_file(self, data):
         """Sauvegarde les données générées dans un fichier JSON."""
-        with open(self.output_file, 'w', encoding='utf-8') as f:
-            assert isinstance(f, TextIOWrapper)
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        if os.path.exists(self.output_file):
+            with open(self.output_file, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+            existing_data.extend(data)
+            with open(self.output_file, 'w', encoding='utf-8') as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(existing_data, f, ensure_ascii=False, indent=4)
+        else:
+            with open(self.output_file, 'w', encoding='utf-8') as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 # Exemple d'utilisation
@@ -100,4 +109,4 @@ if __name__ == "__main__":
     generator = RetailDataGenerator()
     date_test = "2024-12-14"  # Exemple de date
     generator.generate_data_day(date_test)
-    print("Données générées et sauvegardées dans 'data/retail_data.json'")
+    print(f"Données générées et sauvegardées dans 'data/retail_data.json' pour la date {date_test}")
