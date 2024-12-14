@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 from io import TextIOWrapper
 import os
+from sale_generator import SaleGenerator
 
 
 def load_stores():
@@ -53,7 +54,6 @@ def generate_data(date_str, hour, store):
 
         if is_aberrant:
             visitors = random.randint(10000, 50000)
-            sales = random.randint(1000, 5000)
 
         # Appliquer la capacité maximale du magasin
         if visitors is not None and visitors > store['capacity']:
@@ -62,6 +62,11 @@ def generate_data(date_str, hour, store):
     if day_of_week in [5, 6]:  # Le week-end a tendance à avoir plus de monde
         visitors = int(visitors * 1.25) if visitors is not None else None
         sales = int(sales * 1.15) if sales is not None else None
+
+    # Générer des ventes pour chaque heure (en fonction de la date et du nombre de ventes)
+    sale_generator = SaleGenerator(date_str=date_str, num_sales=sales, store=store, hour=hour)
+    sale_generator.generate_sales()
+    sale_generator.save_sales_to_file()
 
     return {
         'store_id': store['id'],
@@ -84,6 +89,7 @@ class RetailDataGenerator:
         data = []
         for store in self.stores:
             for hour in range(24):
+                # Générer des données de retail pour chaque heure
                 data.append(generate_data(date_str, hour, store))
 
         # Sauvegarder les données dans un fichier JSON
@@ -109,4 +115,4 @@ if __name__ == "__main__":
     generator = RetailDataGenerator()
     date_test = "2024-12-14"  # Exemple de date
     generator.generate_data_day(date_test)
-    print(f"Données générées et sauvegardées dans 'data/retail_data.json' pour la date {date_test}")
+    print(f"Données générées et sauvegardées dans 'data/retail_data.json' et 'data/sales.json' pour la date {date_test}")

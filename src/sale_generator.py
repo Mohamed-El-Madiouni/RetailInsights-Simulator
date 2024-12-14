@@ -3,6 +3,7 @@ import uuid
 import json
 from io import TextIOWrapper
 import os
+from store_generator import StoreGenerator
 
 
 def load_products():
@@ -27,38 +28,41 @@ def load_clients():
         return []
 
 
-def load_stores():
-    """Charge les magasins depuis le fichier JSON 'stores.json'."""
-    try:
-        with open('data/stores.json', 'r', encoding='utf-8') as f:
-            stores = json.load(f)
-        return stores
-    except FileNotFoundError:
-        print("Le fichier des magasins n'existe pas.")
-        return []
+def generate_random_time(hour):
+    """
+    Génère une heure aléatoire sous la forme d'un objet datetime.time pour une heure donnée.
+
+    :param hour: L'heure fixe (0-23) pour le champ HH.
+    :return: Un objet datetime.time représentant l'heure.
+    """
+    if not (0 <= hour <= 23):
+        raise ValueError("L'heure doit être entre 0 et 23 inclus.")
+
+    minute = random.randint(0, 59)
+    second = random.randint(0, 59)
+    return f"{hour:02}:{minute:02}:{second:02}"
 
 
 class SaleGenerator:
-    def __init__(self, date_str, num_sales):
+    def __init__(self, date_str, num_sales, store, hour):
         self.products = load_products()
         self.clients = load_clients()
-        self.stores = load_stores()
+        self.store = store
         self.sales = []
         self.date_str = date_str
         self.num_sales = num_sales
+        self.hour = hour
+        self.sale_time = None
 
     def generate_sales(self):
         """
         Génère des ventes aléatoires pour un nombre donné de transactions.
         """
         for _ in range(self.num_sales):
-            # Choisir un client, un magasin et plusieurs produits
-            client = random.choice(self.clients)
+            # Trouver un client dont la ville correspond à celle du magasin
+            client = self._find_client_for_store(self.store)
 
-            # Trouver un magasin dont la ville correspond à celle du client
-            store = self._find_store_for_client(client)
-
-            if store is None:  # Si aucun magasin ne correspond à la ville du client, passer à la prochaine itération
+            if client is None:  # Si aucun client ne correspond à la ville du magasin, passer à la prochaine itération
                 continue
 
             nb_type_product = random.randint(1, 5)  # Nombre de types de produits achetés
@@ -78,27 +82,28 @@ class SaleGenerator:
                     'nb_type_product': nb_type_product,
                     'product_id': product['id'],
                     'client_id': client['id'],
-                    'store_id': store['id'],
+                    'store_id': self.store['id'],
                     'quantity': quantity,
                     'sale_amount': sale_amount,
-                    'sale_date': self.date_str  # La date de la vente passée en paramètre
+                    'sale_date': self.date_str,
+                    'sale_time': generate_random_time(self.hour)
                 })
 
-    def _find_store_for_client(self, client):
+    def _find_client_for_store(self, store):
         """
-        Trouve un magasin dont la ville correspond à celle du client.
+        Trouve un client dont la ville correspond à celle du magasin.
         """
-        matching_stores = [
-            store for store in self.stores if store['location'] == client['city']
+        matching_clients = [
+            client for client in self.clients if store['location'] == client['city']
         ]
 
-        # Vérifier si des magasins correspondent à la ville du client
-        if not matching_stores:
-            print(f"Aucun magasin trouvé pour la ville : {client['city']}")
+        # Vérifier si des clients correspondent à la ville du magasin
+        if not matching_clients:
+            print(f"Aucun client trouvé pour la ville : {store['location']}")
             return None
 
-        # Retourner un magasin choisi aléatoirement
-        return random.choice(matching_stores)
+        # Retourner un client choisi aléatoirement
+        return random.choice(matching_clients)
 
     def get_sales(self):
         return self.sales
@@ -124,7 +129,7 @@ class SaleGenerator:
 # Exemple d'utilisation
 if __name__ == "__main__":
     date_test = "2024-12-14"  # Exemple de date à renseigner
-    sale_generator = SaleGenerator(date_str=date_test, num_sales=5000)
+    sale_generator = SaleGenerator(date_str=date_test, num_sales=5000, store=StoreGenerator(), hour=15)
     sale_generator.generate_sales()
     sale_generator.save_sales_to_file()
 
