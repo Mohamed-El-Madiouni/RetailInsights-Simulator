@@ -1,27 +1,65 @@
 import random
 import uuid
-from datetime import datetime
+import json
+from io import TextIOWrapper
 
-from client_generator import ClientGenerator
-from product_generator import ProductGenerator
-from store_generator import StoreGenerator
+
+def load_products():
+    """Charge les produits depuis le fichier JSON 'products.json'."""
+    try:
+        with open('data/products.json', 'r', encoding='utf-8') as f:
+            products = json.load(f)
+        return products
+    except FileNotFoundError:
+        print("Le fichier des produits n'existe pas.")
+        return []
+
+
+def load_clients():
+    """Charge les clients depuis le fichier JSON 'clients.json'."""
+    try:
+        with open('data/clients.json', 'r', encoding='utf-8') as f:
+            clients = json.load(f)
+        return clients
+    except FileNotFoundError:
+        print("Le fichier des clients n'existe pas.")
+        return []
+
+
+def load_stores():
+    """Charge les magasins depuis le fichier JSON 'stores.json'."""
+    try:
+        with open('data/stores.json', 'r', encoding='utf-8') as f:
+            stores = json.load(f)
+        return stores
+    except FileNotFoundError:
+        print("Le fichier des magasins n'existe pas.")
+        return []
 
 
 class SaleGenerator:
-    def __init__(self, products, clients, stores):
-        self.products = products
-        self.clients = clients
-        self.stores = stores
+    def __init__(self, date_str, num_sales):
+        self.products = load_products()
+        self.clients = load_clients()
+        self.stores = load_stores()
         self.sales = []
+        self.date_str = date_str  # La date de la vente sera un paramètre d'entrée
+        self.num_sales = num_sales
 
-    def generate_sales(self, num_sales=500):
+    def generate_sales(self):
         """
         Génère des ventes aléatoires pour un nombre donné de transactions.
         """
-        for _ in range(num_sales):
+        for _ in range(self.num_sales):
             # Choisir un client, un magasin et plusieurs produits
             client = random.choice(self.clients)
-            store = random.choice(self.stores)
+
+            # Trouver un magasin dont la ville correspond à celle du client
+            store = self._find_store_for_client(client)
+
+            if store is None:  # Si aucun magasin ne correspond à la ville du client, passer à la prochaine itération
+                continue
+
             nb_type_product = random.randint(1, 5)  # Nombre de types de produits achetés
 
             sale_id = str(uuid.uuid4())  # ID unique pour la vente
@@ -42,25 +80,40 @@ class SaleGenerator:
                     'store_id': store['id'],
                     'quantity': quantity,
                     'sale_amount': sale_amount,
-                    'sale_date': datetime.now().strftime("%Y-%m-%d")
+                    'sale_date': self.date_str  # La date de la vente passée en paramètre
                 })
+
+    def _find_store_for_client(self, client):
+        """
+        Trouve un magasin dont la ville correspond à celle du client.
+        """
+        matching_stores = [
+            store for store in self.stores if store['location'] == client['city']
+        ]
+
+        # Vérifier si des magasins correspondent à la ville du client
+        if not matching_stores:
+            print(f"Aucun magasin trouvé pour la ville : {client['city']}")
+            return None
+
+        # Retourner un magasin choisi aléatoirement
+        return random.choice(matching_stores)
 
     def get_sales(self):
         return self.sales
 
+    def save_sales_to_file(self):
+        """Sauvegarder les ventes générées dans un fichier JSON."""
+        with open('data/sales.json', 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.sales, f, ensure_ascii=False, indent=4)
+
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    # Exemple de génération des ventes après avoir généré les autres données
-    product_generator = ProductGenerator()
-    product_generator.generate_products()
-    client_generator = ClientGenerator()
-    client_generator.generate_clients()
-    store_generator = StoreGenerator()
-    store_generator.generate_stores()
-
-    sale_generator = SaleGenerator(product_generator.get_products(), client_generator.get_clients(),
-                                   store_generator.get_stores())
+    date_test = "2024-12-14"  # Exemple de date à renseigner
+    sale_generator = SaleGenerator(date_str=date_test, num_sales=5000)
     sale_generator.generate_sales()
-    for sale in sale_generator.get_sales():
-        print(sale)
+    sale_generator.save_sales_to_file()
+
+    print(f"Données générées et sauvegardées dans 'data/sales.json' pour la date {date_test}")
