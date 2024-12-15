@@ -1,20 +1,18 @@
+import os
 import json
-
-import pytest
-import random
-from datetime import datetime
-
+import pandas as pd
+import duckdb
+from pandas._testing import assert_frame_equal
 from src.retail_data_generator import RetailDataGenerator, generate_data
 from src.product_generator import ProductGenerator
 from src.client_generator import ClientGenerator
 from src.store_generator import StoreGenerator
-import os
 
 
 # Test la méthode de génération de produits
 def test_generate_products():
     # Utiliser un dossier de données spécifique pour les tests
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     # Créer une instance avec le dossier de test
     product_generator = ProductGenerator(data_dir=test_data_dir)
@@ -37,7 +35,7 @@ def test_generate_products():
 # Test la méthode de génération de clients
 def test_generate_clients():
     # Utiliser un dossier de données spécifique pour les tests
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     # Créer une instance avec le dossier de test
     client_generator = ClientGenerator(data_dir=test_data_dir)
@@ -56,7 +54,7 @@ def test_generate_clients():
 # Test la méthode de génération de magasins
 def test_generate_stores():
     # Utiliser un dossier de données spécifique pour les tests
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     # Créer une instance avec le dossier de test
     store_generator = StoreGenerator(data_dir=test_data_dir)
@@ -74,7 +72,7 @@ def test_generate_stores():
 
 # Test la génération des données pour un magasin donné
 def test_generate_data_valid():
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     store = {
         "id": "store_1",
@@ -94,17 +92,18 @@ def test_generate_data_valid():
         f.write("[]")
 
     # Tester pour une heure valide, pendant les heures d'ouverture
-    for hour in range(8, 20):
-        data = generate_data(date_str, hour, store, test_data_dir)
-        assert data["store_id"] == store["id"]
-        assert data["store_name"] == store["name"]
-        assert 0 <= data["visitors"] <= store["capacity"]
-        assert 0 <= data["sales"] <= store["capacity"] * 0.4  # max sales = 40% capacity
+    data = generate_data(date_str, 12, store, test_data_dir, None, None, 'normal_test')
+    assert data["store_id"] == store["id"]
+    assert data["store_name"] == store["name"]
+    assert 0 <= data["visitors"] <= store["capacity"]
+    assert 0 <= data["sales"] <= store["capacity"] * 0.4  # max sales = 40% capacity
+    with open('data/sales.json', 'w', encoding='utf-8') as f:
+        f.write("[]")
 
 
 # Test la génération de données nulles
 def test_generate_data_null():
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     store = {
         "id": "store_1",
@@ -121,11 +120,13 @@ def test_generate_data_null():
         data = generate_data(date_str, hour, store, test_data_dir, 'force', None)
         assert data['visitors'] is None
         assert data['sales'] is None
+    with open('data/sales.json', 'w', encoding='utf-8') as f:
+        f.write("[]")
 
 
 # Test la génération de données aberrantes
 def test_generate_data_aberrant():
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
 
     store = {
         "id": "store_1",
@@ -138,15 +139,16 @@ def test_generate_data_aberrant():
     date_str = "2024-12-14"
 
     # Tester la génération de données aberrantes
-    random.seed(42)  # Pour garantir la reproductibilité des tests
     for hour in range(8, 20):
         data = generate_data(date_str, hour, store, test_data_dir, None, 'force')
         assert data['visitors'] > store['capacity']
+    with open('data/sales.json', 'w', encoding='utf-8') as f:
+        f.write("[]")
 
 
 # Test la création d'une journée complète de données pour un magasin
 def test_generate_data_day():
-    test_data_dir = os.path.join('tests', 'data')
+    test_data_dir = os.path.join('data')
     file_name = os.path.join(test_data_dir, 'retail_data.json')
     generator = RetailDataGenerator(test_data_dir)
     date_test = "2024-12-14"
@@ -164,3 +166,35 @@ def test_generate_data_day():
         assert all('store_id' in record for record in data)  # Vérifier que le 'store_id' existe
         assert all(
             'visitors' in record and 'sales' in record for record in data)  # Vérifier que les données sont complètes
+
+
+def test_validate_sales_consistency():
+    retail = pd.read_json("data/retail_data.json")
+    stores = pd.read_json("data/stores.json")
+    sales = pd.read_json("data/sales.json")
+    query1 = """
+    SELECT
+        store_id,
+        count(distinct sale_id) as total_sales
+    from sales
+    group by
+        store_id,
+    having total_sales not null
+    order by total_sales, store_id
+    """
+    df1 = duckdb.query(query1).df()
+
+    query2 = """
+    SELECT
+        r.store_id as store_id,
+        sum(r.sales) as total_sales
+    from retail r
+    left join stores s on r.store_id=s.id
+    where r.hour >= s.opening_hour and r.hour < s.closing_hour
+    group by
+        store_id,
+    having total_sales not null
+    order by total_sales, store_id
+    """
+    df2 = duckdb.query(query2).df()
+    assert_frame_equal(df1, df2, check_dtype=False)

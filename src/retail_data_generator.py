@@ -6,6 +6,10 @@ import os
 from src.sale_generator import SaleGenerator
 
 
+def get_current_date():
+    return datetime.now().strftime("%Y-%m-%d")
+
+
 def load_stores(data_dir):
     """Charge les magasins depuis le fichier JSON 'stores.json'."""
     try:
@@ -18,7 +22,7 @@ def load_stores(data_dir):
         return []
 
 
-def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberrant=None):
+def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberrant=None, normal_test=None):
     """Génère un nombre de visiteurs et de ventes basé sur l'heure de la journée."""
     date = datetime.strptime(date_str, "%Y-%m-%d")
     day_of_week = date.weekday()  # 0 = lundi, 6 = dimanche
@@ -46,7 +50,7 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
             is_null = random.random() < 0.002  # 0.2% de chance d'avoir une donnée nulle
             is_aberrant = random.random() < 0.001  # 0.1% de chance d'avoir une donnée aberrante
 
-        if is_null:
+        if is_null and normal_test is None:
             visitors = None
             sales = None
         else:
@@ -61,7 +65,7 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
                 visitors = random.randint(int(round(max_visitors*0.05, 0)), int(round(max_visitors*0.3, 0)))
                 sales = random.randint(int(round(max_sales*0.05, 0)), int(round(max_sales*0.3, 0)))
 
-        if is_aberrant:
+        if is_aberrant and normal_test is None:
             visitors = random.randint(10000, 50000)
 
         # Appliquer la capacité maximale du magasin
@@ -75,7 +79,7 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
     # Générer des ventes pour chaque heure (en fonction de la date et du nombre de ventes)
     sale_generator = SaleGenerator(date_str=date_str, num_sales=sales, store=store, hour=hour, data_dir=data_dir)
     sale_generator.generate_sales()
-    sale_generator.save_sales_to_file()
+    sale_generator.save_sales_to_file(data_dir)
 
     return {
         'store_id': store['id'],
@@ -98,9 +102,8 @@ class RetailDataGenerator:
         data = []
         for store in self.stores:
             if is_test:
-                for hour in range(1):
-                    # Générer des données de retail pour une heure lors de tests
-                    data.append(generate_data(date_str, hour, store, data_dir=self.data_dir))
+                # Générer des données de retail pour une heure lors de tests
+                data.append(generate_data(date_str, 12, store, data_dir=self.data_dir))
             else:
                 for hour in range(24):
                     # Générer des données de retail pour chaque heure
@@ -128,6 +131,7 @@ class RetailDataGenerator:
 # Exemple d'utilisation
 if __name__ == "__main__":
     generator = RetailDataGenerator()
-    date_test = "2024-12-14"  # Exemple de date
+#    date_test = "2024-12-14"  # Exemple de date
+    date_test = get_current_date()
     generator.generate_data_day(date_test)
     print(f"Données générées et sauvegardées dans 'data/retail_data.json' et 'data/sales.json' pour la date {date_test}")

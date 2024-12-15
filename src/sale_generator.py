@@ -112,7 +112,7 @@ class SaleGenerator:
     def get_sales(self):
         return self.sales
 
-    def save_sales_to_file(self):
+    def save_sales_to_file(self, data_dir='data'):
         """Sauvegarder les ventes générées dans un fichier JSON."""
         # Vérifier si le dossier spécifié existe, sinon le créer
         os.makedirs(self.data_dir, exist_ok=True)
