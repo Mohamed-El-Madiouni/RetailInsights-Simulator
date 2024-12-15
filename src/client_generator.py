@@ -6,7 +6,8 @@ from io import TextIOWrapper
 
 
 class ClientGenerator:
-    def __init__(self):
+    def __init__(self, data_dir='data'):
+        self.data_dir = data_dir
         self.fake = Faker()
         self.clients = []
         self.cities = ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse']  # Liste des villes
@@ -43,12 +44,12 @@ class ClientGenerator:
             })
 
     def save_clients(self, filename="clients.json"):
-        """Sauvegarde les clients dans un fichier JSON dans le dossier 'data'."""
-        # Vérifie si le dossier 'data' existe, sinon le crée
-        os.makedirs('data', exist_ok=True)
+        """Sauvegarde les clients dans un fichier JSON dans le dossier spécifié."""
+        # Vérifie si le dossier spécifié existe, sinon le crée
+        os.makedirs(self.data_dir, exist_ok=True)
 
-        # Définir le chemin du fichier dans le dossier 'data'
-        filepath = os.path.join('data', filename)
+        # Définir le chemin du fichier dans le dossier spécifié
+        filepath = os.path.join(self.data_dir, filename)
 
         # Sauvegarde les données dans un fichier JSON
         with open(filepath, 'w', encoding='utf-8') as f:
