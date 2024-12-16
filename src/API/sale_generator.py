@@ -3,7 +3,7 @@ import uuid
 import json
 from io import TextIOWrapper
 import os
-from src.store_generator import StoreGenerator
+from src.API.store_generator import StoreGenerator
 
 
 def load_products(data_dir):

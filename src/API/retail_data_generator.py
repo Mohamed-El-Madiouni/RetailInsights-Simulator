@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 from io import TextIOWrapper
 import os
-from src.sale_generator import SaleGenerator
+from src.API.sale_generator import SaleGenerator
 
 
 def get_current_date():
