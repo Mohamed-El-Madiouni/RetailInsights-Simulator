@@ -169,14 +169,11 @@ def test_generate_data_day():
 
 
 def test_validate_sales_consistency():
-    retail = pd.read_json("data_test/retail_data.json")
-    stores = pd.read_json("data_test/stores.json")
-    sales = pd.read_json("data_test/sales.json")
     query1 = """
     SELECT
         store_id,
         count(distinct sale_id) as total_sales
-    from sales
+    from read_json_auto('data_test/sales.json') 
     group by
         store_id,
     having total_sales not null
@@ -188,9 +185,9 @@ def test_validate_sales_consistency():
     SELECT
         r.store_id as store_id,
         sum(r.sales) as total_sales
-    from retail r
-    left join stores s on r.store_id=s.id
-    where r.hour >= s.opening_hour and r.hour < s.closing_hour
+    from read_json_auto('data_test/retail_data.json') r
+    left join read_json_auto('data_test/stores.json') s on r.store_id=s.id
+    where CAST(r.hour as INT) >= cast(s.opening_hour as INT) and cast(r.hour as INT) < cast(s.closing_hour as INT)
     group by
         store_id,
     having total_sales not null

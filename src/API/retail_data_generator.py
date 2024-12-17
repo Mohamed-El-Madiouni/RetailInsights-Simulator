@@ -93,6 +93,9 @@ class RetailDataGenerator:
         self.sales_buffer = []  # Données des ventes
 
     def generate_data_day(self, date_str, is_test=None):
+        # Réinitialiser les buffers de données avant de générer pour une nouvelle date
+        self.retail_data = []
+        self.sales_buffer = []
         for store in self.stores:
             if is_test:
                 # Générer des données de retail pour une heure lors de tests
@@ -153,6 +156,9 @@ if __name__ == "__main__":
     generator = RetailDataGenerator()
     if len(sys.argv) < 2:
         date_test = get_current_date()
+        generator.generate_data_day(date_test)
+        print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
+              f"et 'data/sales.json' pour la date {date_test}")
     else:
         for i in range(len(sys.argv)):
             if i == 0:
