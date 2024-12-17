@@ -151,13 +151,13 @@ class RetailDataGenerator:
 # Exemple d'utilisation
 if __name__ == "__main__":
     generator = RetailDataGenerator()
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         date_test = get_current_date()
-        print(date_test)
     else:
-        date_test = sys.argv[1]
-        print(date_test)
-
-    generator.generate_data_day(date_test)
-    print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
-          f"et 'data/sales.json' pour la date {date_test}")
+        for i in range(len(sys.argv)):
+            if i == 0:
+                continue
+            date_test = sys.argv[i]
+            generator.generate_data_day(date_test)
+            print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
+                  f"et 'data/sales.json' pour la date {date_test}")
