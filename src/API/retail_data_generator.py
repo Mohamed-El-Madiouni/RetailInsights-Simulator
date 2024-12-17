@@ -74,7 +74,6 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
     # Générer des ventes pour chaque heure (en fonction de la date et du nombre de ventes)
     sale_generator = SaleGenerator(date_str=date_str, num_sales=sales, store=store, hour=hour, data_dir=data_dir)
     sales_data = sale_generator.generate_sales()
-    # sale_generator.save_sales_to_file(data_dir)
 
     return {
         'store_id': store['id'],
@@ -114,20 +113,39 @@ class RetailDataGenerator:
     def save_retail_data_to_file(self):
         """Sauvegarde les données retail dans un fichier JSON."""
         file_name = os.path.join(self.data_dir, 'retail_data.json')
+
+        # Charger les ventes existantes si le fichier existe
+        existing_sales = []
+        if os.path.exists(file_name):
+            with open(file_name, 'r', encoding='utf-8') as f:
+                existing_sales = json.load(f)
+
+        # Ajouter les nouvelles ventes
+        existing_sales.extend(self.retail_data)
+
         with open(file_name, 'w', encoding='utf-8') as f:
             assert isinstance(f, TextIOWrapper)
-            json.dump(self.retail_data, f, ensure_ascii=False, indent=4)
+            json.dump(existing_sales, f, ensure_ascii=False, indent=4)
         print("Données retail écrites dans 'retail_data.json'.")
 
     def save_sales_to_file(self):
         """Sauvegarde les données des ventes dans un fichier JSON."""
         file_path = os.path.join(self.data_dir, 'sales.json')
 
+        # Charger les ventes existantes si le fichier existe
+        existing_sales = []
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                existing_sales = json.load(f)
+
+        # Ajouter les nouvelles ventes
+        existing_sales.extend(self.sales_buffer)
+
         # Écrire toutes les ventes dans le fichier au format liste JSON
         with open(file_path, 'w', encoding='utf-8') as f:
             assert isinstance(f, TextIOWrapper)
-            json.dump(self.sales_buffer, f, ensure_ascii=False, indent=4)
-        print("Données des ventes écrites dans 'sales.json'.")
+            json.dump(existing_sales, f, ensure_ascii=False, indent=4)
+        print("Toutes les ventes ont été écrites dans 'sales.json'.")
 
 
 # Exemple d'utilisation

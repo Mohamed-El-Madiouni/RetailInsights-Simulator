@@ -56,6 +56,11 @@ class SaleGenerator:
         self.hour = hour
         self.data_dir = data_dir
 
+        # Préchargement les clients par ville pour optimiser la recherche
+        self.clients_by_city = {}
+        for client in self.clients:
+            self.clients_by_city.setdefault(client['city'], []).append(client)
+
     def generate_sales(self):
         """
         Génère des ventes aléatoires pour un nombre donné de transactions.
@@ -93,22 +98,17 @@ class SaleGenerator:
                     })
         return self.sales
 
-
     def _find_client_for_store(self, store):
         """
         Trouve un client dont la ville correspond à celle du magasin.
         """
-        matching_clients = [
-            client for client in self.clients if store['location'] == client['city']
-        ]
-
-        # Vérifier si des clients correspondent à la ville du magasin
-        if not matching_clients:
+        clients_in_city = self.clients_by_city.get(store['location'], [])
+        if clients_in_city:
+            # Retourner un client choisi aléatoirement
+            return random.choice(clients_in_city)
+        else:
             print(f"Aucun client trouvé pour la ville : {store['location']}")
             return None
-
-        # Retourner un client choisi aléatoirement
-        return random.choice(matching_clients)
 
     def get_sales(self):
         return self.sales
