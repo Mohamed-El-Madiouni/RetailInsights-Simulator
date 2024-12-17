@@ -54,7 +54,6 @@ class SaleGenerator:
         self.date_str = date_str
         self.num_sales = num_sales
         self.hour = hour
-        self.sale_time = None
         self.data_dir = data_dir
 
     def generate_sales(self):
@@ -92,6 +91,8 @@ class SaleGenerator:
                         'sale_date': self.date_str,
                         'sale_time': generate_random_time(self.hour)
                     })
+        return self.sales
+
 
     def _find_client_for_store(self, store):
         """
@@ -132,6 +133,7 @@ class SaleGenerator:
             with open(file_path, 'w', encoding='utf-8') as f:
                 assert isinstance(f, TextIOWrapper)
                 json.dump(self.sales, f, ensure_ascii=False, indent=4)
+        print("écriture dans le fichier 'sales.json'")
 
 
 # Exemple d'utilisation

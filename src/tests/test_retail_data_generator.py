@@ -92,7 +92,7 @@ def test_generate_data_valid():
         f.write("[]")
 
     # Tester pour une heure valide, pendant les heures d'ouverture
-    data = generate_data(date_str, 12, store, test_data_dir, None, None, 'normal_test')
+    data, _ = generate_data(date_str, 12, store, test_data_dir, None, None, 'normal_test')
     assert data["store_id"] == store["id"]
     assert data["store_name"] == store["name"]
     assert 0 <= data["visitors"] <= store["capacity"]
@@ -117,7 +117,7 @@ def test_generate_data_null():
 
     # Tester que des données nulles peuvent être générées
     for hour in range(8, 20):
-        data = generate_data(date_str, hour, store, test_data_dir, 'force', None)
+        data, _ = generate_data(date_str, hour, store, test_data_dir, 'force', None)
         assert data['visitors'] is None
         assert data['sales'] is None
     with open('data_test/sales.json', 'w', encoding='utf-8') as f:
@@ -140,7 +140,7 @@ def test_generate_data_aberrant():
 
     # Tester la génération de données aberrantes
     for hour in range(8, 20):
-        data = generate_data(date_str, hour, store, test_data_dir, None, 'force')
+        data, _ = generate_data(date_str, hour, store, test_data_dir, None, 'force')
         assert data['visitors'] > store['capacity']
     with open('data_test/sales.json', 'w', encoding='utf-8') as f:
         f.write("[]")

@@ -40,8 +40,10 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
         visitors = 0
         sales = 0
     else:
-        is_null = (force_null is not None) or (random.random() < 0.002)  # 0.2% de chance d'avoir une donnée nulle sauf si on force les données nulles
-        is_aberrant = (force_aberrant is not None) or (random.random() < 0.001)  # 0.1% de chance d'avoir une donnée aberrante sauf si on force les données aberrantes
+        # 0.2% de chance d'avoir une donnée nulle sauf si on force les données nulles
+        is_null = (force_null is not None) or (random.random() < 0.002)
+        # 0.1% de chance d'avoir une donnée aberrante sauf si on force les données aberrantes
+        is_aberrant = (force_aberrant is not None) or (random.random() < 0.001)
 
         if is_null and normal_test is None:
             visitors = None
@@ -71,8 +73,8 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
 
     # Générer des ventes pour chaque heure (en fonction de la date et du nombre de ventes)
     sale_generator = SaleGenerator(date_str=date_str, num_sales=sales, store=store, hour=hour, data_dir=data_dir)
-    sale_generator.generate_sales()
-    sale_generator.save_sales_to_file(data_dir)
+    sales_data = sale_generator.generate_sales()
+    # sale_generator.save_sales_to_file(data_dir)
 
     return {
         'store_id': store['id'],
@@ -81,44 +83,51 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
         'hour': hour,
         'visitors': visitors,
         'sales': sales
-    }
+    }, sales_data
 
 
 class RetailDataGenerator:
     def __init__(self, data_dir='data'):
         self.data_dir = data_dir
-
-        # Charger les magasins depuis le fichier JSON
-        self.stores = load_stores(self.data_dir)
+        self.stores = load_stores(self.data_dir)  # Charger les magasins depuis le fichier JSON
+        self.retail_data = []  # Données retail
+        self.sales_buffer = []  # Données des ventes
 
     def generate_data_day(self, date_str, is_test=None):
-        data = []
         for store in self.stores:
             if is_test:
                 # Générer des données de retail pour une heure lors de tests
-                data.append(generate_data(date_str, 12, store, data_dir=self.data_dir))
+                retail_entry, sales = generate_data(date_str, 12, store, self.data_dir)
+                self.retail_data.append(retail_entry)
+                self.sales_buffer.extend(sales)
             else:
                 for hour in range(24):
                     # Générer des données de retail pour chaque heure
-                    data.append(generate_data(date_str, hour, store, data_dir=self.data_dir))
+                    retail_entry, sales = generate_data(date_str, hour, store, self.data_dir)
+                    self.retail_data.append(retail_entry)
+                    self.sales_buffer.extend(sales)
 
-        # Sauvegarder les données dans un fichier JSON
-        self.save_data_to_file(data)
+        # Sauvegarder les données retail et ventes dans un fichier JSON
+        self.save_retail_data_to_file()
+        self.save_sales_to_file()
 
-    def save_data_to_file(self, data):
-        """Sauvegarde les données générées dans un fichier JSON."""
+    def save_retail_data_to_file(self):
+        """Sauvegarde les données retail dans un fichier JSON."""
         file_name = os.path.join(self.data_dir, 'retail_data.json')
-        if os.path.exists(file_name):
-            with open(file_name, 'r', encoding='utf-8') as f:
-                existing_data = json.load(f)
-            existing_data.extend(data)
-            with open(file_name, 'w', encoding='utf-8') as f:
-                assert isinstance(f, TextIOWrapper)
-                json.dump(existing_data, f, ensure_ascii=False, indent=4)
-        else:
-            with open(file_name, 'w', encoding='utf-8') as f:
-                assert isinstance(f, TextIOWrapper)
-                json.dump(data, f, ensure_ascii=False, indent=4)
+        with open(file_name, 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.retail_data, f, ensure_ascii=False, indent=4)
+        print("Données retail écrites dans 'retail_data.json'.")
+
+    def save_sales_to_file(self):
+        """Sauvegarde les données des ventes dans un fichier JSON."""
+        file_path = os.path.join(self.data_dir, 'sales.json')
+
+        # Écrire toutes les ventes dans le fichier au format liste JSON
+        with open(file_path, 'w', encoding='utf-8') as f:
+            assert isinstance(f, TextIOWrapper)
+            json.dump(self.sales_buffer, f, ensure_ascii=False, indent=4)
+        print("Données des ventes écrites dans 'sales.json'.")
 
 
 # Exemple d'utilisation
@@ -132,4 +141,5 @@ if __name__ == "__main__":
         print(date_test)
 
     generator.generate_data_day(date_test)
-    print(f"Données générées et sauvegardées dans 'data/retail_data.json' et 'data/sales.json' pour la date {date_test}")
+    print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
+          f"et 'data/sales.json' pour la date {date_test}")
