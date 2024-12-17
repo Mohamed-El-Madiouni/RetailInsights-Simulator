@@ -1,4 +1,5 @@
 import random
+import sys
 from datetime import datetime
 import json
 from io import TextIOWrapper
@@ -39,16 +40,8 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
         visitors = 0
         sales = 0
     else:
-        is_null = False
-        is_aberrant = False
-        if (force_null is not None) or (force_aberrant is not None):
-            if force_null is not None:
-                is_null = True
-            if force_aberrant is not None:
-                is_aberrant = True
-        else:
-            is_null = random.random() < 0.002  # 0.2% de chance d'avoir une donnée nulle
-            is_aberrant = random.random() < 0.001  # 0.1% de chance d'avoir une donnée aberrante
+        is_null = (force_null is not None) or (random.random() < 0.002)  # 0.2% de chance d'avoir une donnée nulle sauf si on force les données nulles
+        is_aberrant = (force_aberrant is not None) or (random.random() < 0.001)  # 0.1% de chance d'avoir une donnée aberrante sauf si on force les données aberrantes
 
         if is_null and normal_test is None:
             visitors = None
@@ -131,7 +124,12 @@ class RetailDataGenerator:
 # Exemple d'utilisation
 if __name__ == "__main__":
     generator = RetailDataGenerator()
-#    date_test = "2024-12-14"  # Exemple de date
-    date_test = get_current_date()
+    if len(sys.argv) != 2:
+        date_test = get_current_date()
+        print(date_test)
+    else:
+        date_test = sys.argv[1]
+        print(date_test)
+
     generator.generate_data_day(date_test)
     print(f"Données générées et sauvegardées dans 'data/retail_data.json' et 'data/sales.json' pour la date {date_test}")
