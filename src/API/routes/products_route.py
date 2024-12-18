@@ -27,7 +27,7 @@ def load_products():
         return []
 
 
-@router.get("/", response_model=List[ProductResponse])
+@router.get("", response_model=List[ProductResponse])
 async def get_products():
     """
     Route GET pour récupérer la liste des produits depuis le fichier 'products.json'.

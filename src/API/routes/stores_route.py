@@ -28,7 +28,7 @@ def load_stores():
         return []
 
 
-@router.get("/", response_model=List[StoreResponse])
+@router.get("", response_model=List[StoreResponse])
 async def get_stores():
     """
     Route GET pour récupérer la liste des magasins depuis le fichier 'stores.json'.

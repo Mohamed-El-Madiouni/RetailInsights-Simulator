@@ -31,7 +31,7 @@ def load_sales():
         return []
 
 
-@router.get("/", response_model=List[SaleResponse])
+@router.get("", response_model=List[SaleResponse])
 async def get_sales(sale_date: str, store_id: str):
     """
     Route GET pour récupérer la liste des ventes dans un magasin à une date donnée.

@@ -28,7 +28,7 @@ def load_clients():
         return []
 
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("", response_model=List[ClientResponse])
 async def get_clients(city: str):
     """
     Route GET pour récupérer la liste des clients dans une ville donnée.

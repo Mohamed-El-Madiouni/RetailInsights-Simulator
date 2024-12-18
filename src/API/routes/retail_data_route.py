@@ -30,7 +30,7 @@ def load_retail_data():
         return []
 
 
-@router.get("/", response_model=List[RetailDataResponse])
+@router.get("", response_model=List[RetailDataResponse])
 async def get_visitors(date: str):
     """
     Route GET pour récupérer le nombre total de visiteurs pour un magasin
