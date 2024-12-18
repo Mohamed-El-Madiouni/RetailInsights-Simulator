@@ -46,7 +46,7 @@ def generate_random_time(hour):
 
 
 class SaleGenerator:
-    def __init__(self, date_str, num_sales, store, hour, data_dir='data'):
+    def __init__(self, date_str, num_sales, store, hour, data_dir='data_api'):
         self.products = load_products(data_dir)
         self.clients = load_clients(data_dir)
         self.store = store
@@ -113,7 +113,7 @@ class SaleGenerator:
     def get_sales(self):
         return self.sales
 
-    def save_sales_to_file(self, data_dir='data'):
+    def save_sales_to_file(self, data_dir='data_api'):
         """Sauvegarder les ventes générées dans un fichier JSON."""
         # Vérifier si le dossier spécifié existe, sinon le créer
         os.makedirs(self.data_dir, exist_ok=True)
@@ -143,4 +143,4 @@ if __name__ == "__main__":
     sale_generator.generate_sales()
     sale_generator.save_sales_to_file()
 
-    print(f"Données générées et sauvegardées dans 'data/sales.json' pour la date {date_test}")
+    print(f"Données générées et sauvegardées dans 'data_api/sales.json' pour la date {date_test}")

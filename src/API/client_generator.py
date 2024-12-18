@@ -6,7 +6,7 @@ from io import TextIOWrapper
 
 
 class ClientGenerator:
-    def __init__(self, data_dir='data'):
+    def __init__(self, data_dir='data_api'):
         self.data_dir = data_dir
         self.fake = Faker()
         self.clients = []
@@ -65,4 +65,4 @@ if __name__ == "__main__":
     client_generator = ClientGenerator()
     client_generator.generate_clients()
     client_generator.save_clients()  # Sauvegarde les clients dans le fichier JSON
-    print("Clients sauvegardés dans le dossier 'data'.")
+    print("Clients sauvegardés dans le dossier 'data_api'.")

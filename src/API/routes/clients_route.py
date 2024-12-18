@@ -20,7 +20,7 @@ class ClientResponse(BaseModel):
 def load_clients():
     """Charge les clients depuis le fichier JSON 'clients.json'."""
     try:
-        with open('data/clients.json', 'r', encoding='utf-8') as f:
+        with open('data_api/clients.json', 'r', encoding='utf-8') as f:
             clients = json.load(f)
         return clients
     except FileNotFoundError:

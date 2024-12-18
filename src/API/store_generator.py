@@ -6,7 +6,7 @@ from io import TextIOWrapper
 
 
 class StoreGenerator:
-    def __init__(self, data_dir='data'):
+    def __init__(self, data_dir='data_api'):
         self.data_dir = data_dir
         self.stores = []
 
@@ -53,4 +53,4 @@ if __name__ == "__main__":
     store_generator = StoreGenerator()
     store_generator.generate_stores()
     store_generator.save_stores()  # Sauvegarde les magasins dans le fichier JSON
-    print("Magasins sauvegardés dans le dossier 'data'.")
+    print("Magasins sauvegardés dans le dossier 'data_api'.")

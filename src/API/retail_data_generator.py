@@ -86,7 +86,7 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
 
 
 class RetailDataGenerator:
-    def __init__(self, data_dir='data'):
+    def __init__(self, data_dir='data_api'):
         self.data_dir = data_dir
         self.stores = load_stores(self.data_dir)  # Charger les magasins depuis le fichier JSON
         self.retail_data = []  # Données retail
@@ -157,13 +157,13 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         date_test = get_current_date()
         generator.generate_data_day(date_test)
-        print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
-              f"et 'data/sales.json' pour la date {date_test}")
+        print(f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
+              f"et 'data_api/sales.json' pour la date {date_test}")
     else:
         for i in range(len(sys.argv)):
             if i == 0:
                 continue
             date_test = sys.argv[i]
             generator.generate_data_day(date_test)
-            print(f"Données générées et sauvegardées dans 'data/retail_data.json' "
-                  f"et 'data/sales.json' pour la date {date_test}")
+            print(f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
+                  f"et 'data_api/sales.json' pour la date {date_test}")

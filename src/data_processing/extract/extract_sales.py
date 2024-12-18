@@ -9,7 +9,7 @@ import json
 # Fonction pour retrouver tous les magasins existants
 def fetch_stores():
     stores = []
-    file_name = os.path.join('../../data', 'stores.json')
+    file_name = os.path.join('../../data_api', 'stores.json')
 
     # Charger les magasins si le fichier existe
     if os.path.exists(file_name):

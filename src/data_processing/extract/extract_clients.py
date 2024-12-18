@@ -6,7 +6,7 @@ import json
 # Fonction pour retrouver toutes les villes des clients
 def fetch_cities():
     cities = []
-    file_name = os.path.join('../../data', 'clients.json')
+    file_name = os.path.join('../../data_api', 'clients.json')
 
     # Charger les ventes existantes si le fichier existe
     if os.path.exists(file_name):

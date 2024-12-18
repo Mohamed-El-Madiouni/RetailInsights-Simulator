@@ -6,7 +6,7 @@ from io import TextIOWrapper
 
 
 class ProductGenerator:
-    def __init__(self, data_dir='data'):
+    def __init__(self, data_dir='data_api'):
         self.data_dir = data_dir
         self.categories = ['Électronique', 'Mode', 'Alimentation', 'Beauté', 'Meubles']
         self.product_names = ['Smartphone', 'Chaise', 'Ordinateur', 'Shampooing', 'Télévision', 'Chaussures', 'T-shirt',
@@ -76,7 +76,7 @@ class ProductGenerator:
 
     def save_products(self, filename="products.json"):
         """Sauvegarde les produits dans un fichier JSON dans le dossier spécifié."""
-        # Vérifie si le dossier 'data' existe, sinon le crée
+        # Vérifie si le dossier 'data_api' existe, sinon le crée
         os.makedirs(self.data_dir, exist_ok=True)
 
         # Définir le chemin du fichier dans le dossier spécifié
@@ -96,4 +96,4 @@ if __name__ == "__main__":
     product_generator = ProductGenerator()
     product_generator.generate_products()
     product_generator.save_products()  # Sauvegarde les produits dans le fichier JSON
-    print("Produits sauvegardés dans le dossier 'data'.")
+    print("Produits sauvegardés dans le dossier 'data_api'.")
