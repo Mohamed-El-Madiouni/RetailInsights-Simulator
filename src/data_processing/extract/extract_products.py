@@ -1,16 +1,21 @@
-import requests
+from utils import create_output_folder, save_with_pandas, fetch_from_api
+import os
 
 
-# Fonction pour requêter l'API
-def fetch_data_products():
-    url = f"http://127.0.0.1:8000/products"
-    response = requests.get(url)
-    if response.status_code == 200:
-        print("Données de produits récupérées de l'API.")
-        print(response.json())
+# Récupérer et sauvegarder les données produits
+def fetch_and_save_products():
+    url = "http://127.0.0.1:8000/products"
+    data = fetch_from_api(url)  # Récupère les données depuis l'API
+
+    if data:
+        output_folder = create_output_folder()
+        output_file = os.path.join(output_folder, "products.parquet")
+        save_with_pandas(data, output_file)  # Sauvegarde les données en format Parquet
+        print(f"Fichier Parquet créé : {output_file}")
     else:
-        print(f"Erreur lors de la récupération des données de produits de l'API: {response.status_code}")
+        print("Aucune donnée récupérée depuis l'API produits.")
+        raise "Aucune donnée récupérée depuis l'API produits."
 
 
 if __name__ == "__main__":
-    fetch_data_products()
+    fetch_and_save_products()

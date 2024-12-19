@@ -23,7 +23,7 @@ class SaleResponse(BaseModel):
 def load_sales():
     """Charge les ventes depuis le fichier JSON 'sales.json'."""
     try:
-        with open('data_api/sales.json', 'r', encoding='utf-8') as f:
+        with open('../../data_api/sales.json', 'r', encoding='utf-8') as f:
             sales = json.load(f)
         return sales
     except FileNotFoundError:

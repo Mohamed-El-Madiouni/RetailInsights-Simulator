@@ -22,7 +22,7 @@ class RetailDataResponse(BaseModel):
 def load_retail_data():
     """Charge les données de retail depuis le fichier JSON 'retail_data.json'."""
     try:
-        with open('data_api/retail_data.json', 'r', encoding='utf-8') as f:
+        with open('../../data_api/retail_data.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
         return data
     except FileNotFoundError:
