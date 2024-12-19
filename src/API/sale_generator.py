@@ -74,14 +74,15 @@ class SaleGenerator:
                     continue
 
                 nb_type_product = random.randint(1, 5)  # Nombre de types de produits achetés
-
                 sale_id = str(uuid.uuid4())  # ID unique pour la vente
+                sale_time = generate_random_time(self.hour)  # Uniformiser le sale_time pour ce sale_id
                 total_sale_amount = 0  # Montant total de la vente
 
-                # Créer des lignes pour chaque produit acheté
-                for _ in range(nb_type_product):
-                    product = random.choice(self.products)
-                    quantity = random.randint(1, 5)  # Quantité achetée pour ce produit
+                # Sélectionner des produits uniques
+                selected_products = random.sample(self.products, k=nb_type_product)
+
+                for product in selected_products:
+                    quantity = random.randint(1, 5)
                     sale_amount = round(product['price'] * quantity, 2)
                     total_sale_amount += sale_amount
 
@@ -94,7 +95,7 @@ class SaleGenerator:
                         'quantity': quantity,
                         'sale_amount': sale_amount,
                         'sale_date': self.date_str,
-                        'sale_time': generate_random_time(self.hour)
+                        'sale_time': sale_time
                     })
         return self.sales
 
