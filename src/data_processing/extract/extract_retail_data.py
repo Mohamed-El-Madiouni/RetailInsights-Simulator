@@ -11,8 +11,9 @@ def fetch_and_save_retail_data(date):
     new_data = fetch_from_api(url)  # Récupère les nouvelles données depuis l'API
 
     if new_data:
-        output_folder = create_output_folder()
-        output_file = os.path.join(output_folder, "retail_data.parquet")
+        output_folder = create_output_folder("data/retail_data")
+        month_str = pd.to_datetime(date).strftime("%Y-%m")
+        output_file = os.path.join(output_folder, f"retail_data_{month_str}.parquet")
 
         # Charger les données existantes, s'il y en a
         if os.path.exists(output_file):

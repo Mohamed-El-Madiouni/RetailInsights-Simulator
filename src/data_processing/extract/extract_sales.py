@@ -36,8 +36,9 @@ def fetch_and_save_sales(date):
             all_sales.extend(data)
 
     if all_sales:
-        output_folder = create_output_folder()
-        output_file = os.path.join(output_folder, "sales.parquet")
+        output_folder = create_output_folder("data/sales")
+        month_str = pd.to_datetime(date).strftime("%Y-%m")
+        output_file = os.path.join(output_folder, f"sales_{month_str}.parquet")
 
         # Charger les données existantes, s'il y en a
         if os.path.exists(output_file):
