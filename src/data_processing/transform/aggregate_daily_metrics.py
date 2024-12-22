@@ -65,8 +65,23 @@ def calculate_daily_metrics():
         print("Données manquantes. Agrégation annulée.")
         return
 
-    # Filtrer les données nulles pour retail_data
-    retail_data = retail_data.dropna(subset=["visitors", "sales"])
+    # Filtrer les âges aberrants dans clients_data
+    clients_data["age"] = clients_data["age"].apply(lambda x: x if x <= 120 else None)
+
+    # Supprimer les lignes avec des valeurs nulles pour sales et visitors
+    retail_data = retail_data[~(retail_data["visitors"].isna() & retail_data["sales"].isna())]
+
+    # Identifier les valeurs correctes dans visitors et calculer le ratio moyen
+    valid_visitors = retail_data[(retail_data["visitors"] <= 5000) & (retail_data["visitors"] > 0)]
+    ratio_mean = (
+            valid_visitors["sales"].sum() / valid_visitors["visitors"].sum()
+    ) if not valid_visitors.empty else 0
+
+    # Remplacer les valeurs aberrantes dans visitors par une estimation basée sur le ratio
+    retail_data["visitors"] = retail_data.apply(
+        lambda row: row["sales"] * ratio_mean if row["visitors"] > 5000 else row["visitors"],
+        axis=1
+    )
 
     # Agrégation de retail_data
     retail_agg = retail_data.groupby("date").apply(
