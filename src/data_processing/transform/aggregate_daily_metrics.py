@@ -71,20 +71,23 @@ def calculate_daily_metrics():
     # Supprimer les lignes avec des valeurs nulles pour sales et visitors
     retail_data = retail_data[~(retail_data["visitors"].isna() & retail_data["sales"].isna())]
 
-    # Identifier les valeurs correctes dans visitors et calculer le ratio moyen
-    valid_visitors = retail_data[(retail_data["visitors"] <= 5000) & (retail_data["visitors"] > 0)]
-    ratio_mean = (
-            valid_visitors["sales"].sum() / valid_visitors["visitors"].sum()
-    ) if not valid_visitors.empty else 0
+    # Calculer un ratio par magasin pour corriger les valeurs aberrantes
+    def calculate_store_ratio(group):
+        valid_visitors = group[(group["visitors"] <= 5000) & (group["visitors"] > 0)]
+        ratio_mean = (
+                valid_visitors["sales"].sum() / valid_visitors["visitors"].sum()
+        ) if not valid_visitors.empty else 0
+        group["visitors"] = group.apply(
+            lambda row: row["sales"] * ratio_mean if row["visitors"] > 5000 else row["visitors"],
+            axis=1
+        )
+        return group
 
     # Remplacer les valeurs aberrantes dans visitors par une estimation basée sur le ratio
-    retail_data["visitors"] = retail_data.apply(
-        lambda row: row["sales"] * ratio_mean if row["visitors"] > 5000 else row["visitors"],
-        axis=1
-    )
+    retail_data = retail_data.groupby("store_id").apply(calculate_store_ratio).reset_index(drop=True)
 
     # Agrégation de retail_data
-    retail_agg = retail_data.groupby("date").apply(
+    retail_agg = retail_data.groupby(["date", "store_id"]).apply(
         lambda group: pd.Series({
             "total_visitors": group["visitors"].sum(),
             "total_transactions": group["sales"].sum(),
@@ -93,24 +96,24 @@ def calculate_daily_metrics():
     ).reset_index()
 
     # Agrégation de sales_data
-    sales_agg = sales_data.groupby("sale_date").agg(
+    sales_agg = sales_data.groupby(["sale_date", "store_id"]).agg(
         total_quantity=("quantity", "sum"),
         total_revenue=("sale_amount", "sum")
     ).reset_index().rename(columns={"sale_date": "date"})
 
     # Associer sales_data avec products pour calculer les coûts
     sales_with_cost = sales_data.merge(products_data, left_on="product_id", right_on="id")
-    sales_cost_agg = sales_with_cost.groupby("sale_date").agg(
+    sales_cost_agg = sales_with_cost.groupby(["sale_date", "store_id"]).agg(
         total_cost=("quantity", lambda x: (x * sales_with_cost["cost"]).sum()),
     ).reset_index()
 
     # Calculer le best_selling_product
     best_selling_product = (
-        sales_with_cost.groupby(["sale_date", "product_id"])["quantity"]
+        sales_with_cost.groupby(["sale_date", "store_id", "product_id"])["quantity"]
         .sum()
         .reset_index()
-        .sort_values(["sale_date", "quantity"], ascending=[True, False])
-        .groupby("sale_date")
+        .sort_values(["sale_date", "store_id", "quantity"], ascending=[True, True, False])
+        .groupby(["sale_date", "store_id"])
         .first()
         .reset_index()
         .rename(columns={"product_id": "best_selling_product", "quantity": "max_quantity"})
@@ -118,14 +121,14 @@ def calculate_daily_metrics():
 
     # Fusionner les deux agrégations
     sales_cost_agg = sales_cost_agg.merge(
-        best_selling_product[["sale_date", "best_selling_product"]],
-        on="sale_date",
+        best_selling_product[["sale_date", "store_id", "best_selling_product"]],
+        on=["sale_date", "store_id"],
         how="left"
     ).rename(columns={"sale_date": "date"})
 
     # Fusionner les agrégations
-    daily_metrics = retail_agg.merge(sales_agg, on="date", how="outer").merge(
-        sales_cost_agg, on="date", how="outer"
+    daily_metrics = retail_agg.merge(sales_agg, on=["date", "store_id"], how="outer").merge(
+        sales_cost_agg, on=["date", "store_id"], how="outer"
     ).fillna(0)
 
     # Calcul des métriques finales
@@ -139,7 +142,7 @@ def calculate_daily_metrics():
     # Sauvegarder les métriques enrichies sur S3
     save_parquet_to_s3(daily_metrics, "processed_data/traffic_metrics.parquet")
     print("Métriques enrichies calculées et sauvegardées avec succès.")
-    print(daily_metrics.T)
+    print(daily_metrics)
 
 
 if __name__ == "__main__":
