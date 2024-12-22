@@ -65,6 +65,9 @@ def calculate_daily_metrics():
         print("Données manquantes. Agrégation annulée.")
         return
 
+    # Filtrer les données nulles pour retail_data
+    retail_data = retail_data.dropna(subset=["visitors", "sales"])
+
     # Agrégation de retail_data
     retail_agg = retail_data.groupby("date").apply(
         lambda group: pd.Series({
