@@ -60,7 +60,6 @@ def calculate_daily_metrics():
     sales_data = read_parquet_from_s3("extracted_data/sales/")
     products_data = read_parquet_from_s3("extracted_data/products.parquet")
     clients_data = read_parquet_from_s3("extracted_data/clients.parquet")
-    sales_data = sales_data[sales_data["store_id"] == "ad8ea008-bc1c-4f27-845a-2fad67b68471"]
 
     if retail_data.empty or sales_data.empty or products_data.empty or clients_data.empty:
         print("Données manquantes. Agrégation annulée.")
@@ -85,8 +84,26 @@ def calculate_daily_metrics():
     sales_with_cost = sales_data.merge(products_data, left_on="product_id", right_on="id")
     sales_cost_agg = sales_with_cost.groupby("sale_date").agg(
         total_cost=("quantity", lambda x: (x * sales_with_cost["cost"]).sum()),
-        best_selling_product=("product_id", lambda x: x.value_counts().idxmax())
-    ).reset_index().rename(columns={"sale_date": "date"})
+    ).reset_index()
+
+    # Calculer le best_selling_product
+    best_selling_product = (
+        sales_with_cost.groupby(["sale_date", "product_id"])["quantity"]
+        .sum()
+        .reset_index()
+        .sort_values(["sale_date", "quantity"], ascending=[True, False])
+        .groupby("sale_date")
+        .first()
+        .reset_index()
+        .rename(columns={"product_id": "best_selling_product", "quantity": "max_quantity"})
+    )
+
+    # Fusionner les deux agrégations
+    sales_cost_agg = sales_cost_agg.merge(
+        best_selling_product[["sale_date", "best_selling_product"]],
+        on="sale_date",
+        how="left"
+    ).rename(columns={"sale_date": "date"})
 
     # Fusionner les agrégations
     daily_metrics = retail_agg.merge(sales_agg, on="date", how="outer").merge(
@@ -104,6 +121,7 @@ def calculate_daily_metrics():
     # Sauvegarder les métriques enrichies sur S3
     save_parquet_to_s3(daily_metrics, "processed_data/traffic_metrics.parquet")
     print("Métriques enrichies calculées et sauvegardées avec succès.")
+    print(daily_metrics.T)
 
 
 if __name__ == "__main__":
