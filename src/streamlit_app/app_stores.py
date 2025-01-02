@@ -22,39 +22,37 @@ s3 = boto3.client(
     region_name=region_name,
 )
 
-# Configuration du bucket et du fichier
+# Configuration des fichiers S3
 BUCKET_NAME = "retail-insights-bucket"
-S3_KEY = "extracted_data/stores.parquet"
+STORES_KEY = "extracted_data/stores.parquet"
+METRICS_KEY = "processed_data/traffic_metrics.parquet"
 
 
-def load_store_data_from_s3():
+def load_data_from_s3(s3_key):
     """
-    Charge les données des magasins depuis un fichier Parquet stocké sur S3.
+    Charge les données depuis un fichier Parquet stocké sur S3.
 
-    :return: DataFrame Pandas contenant les données des magasins.
+    :param s3_key: Chemin du fichier dans le bucket S3.
+    :return: DataFrame Pandas contenant les données.
     """
     try:
-        # Télécharger le fichier Parquet depuis S3
-        response = s3.get_object(Bucket=BUCKET_NAME, Key=S3_KEY)
+        response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
         buffer = io.BytesIO(response["Body"].read())
-
-        # Charger le contenu dans un DataFrame Pandas
-        df = pd.read_parquet(buffer)
-        return df
+        return pd.read_parquet(buffer)
     except Exception as e:
         st.error(f"Erreur lors du chargement des données depuis S3 : {e}")
         return pd.DataFrame()
 
-
 def main():
-    st.title("Visualisation des magasins")
-    st.markdown("### Sélectionnez un magasin pour afficher ses informations")
+    st.title("Visualisation des métriques des magasins")
+    st.markdown("### Sélectionnez un magasin pour afficher ses métriques")
 
-    # Charger les données des magasins depuis S3
-    stores_df = load_store_data_from_s3()
+    # Charger les données des magasins et des métriques
+    stores_df = load_data_from_s3(STORES_KEY)
+    metrics_df = load_data_from_s3(METRICS_KEY)
 
-    if stores_df.empty:
-        st.warning("Aucune donnée de magasin disponible.")
+    if stores_df.empty or metrics_df.empty:
+        st.warning("Données manquantes ou non disponibles.")
         return
 
     # Afficher une liste déroulante avec les noms des magasins
@@ -62,10 +60,26 @@ def main():
     selected_store = st.selectbox("Choisissez un magasin :", store_names)
 
     if selected_store:
-        # Afficher les détails du magasin sélectionné
-        store_details = stores_df[stores_df['name'] == selected_store]
-        st.write(f"**Informations sur le magasin sélectionné :**")
-        st.dataframe(store_details)
+        # Récupérer l'ID du magasin sélectionné
+        selected_store_id = stores_df.loc[stores_df['name'] == selected_store, 'id'].values[0]
+
+        # Filtrer les métriques pour ce magasin
+        store_metrics = metrics_df[metrics_df['store_id'] == selected_store_id]
+
+        if store_metrics.empty:
+            st.warning("Aucune métrique disponible pour ce magasin.")
+        else:
+            st.write(f"**Métriques quotidiennes pour le magasin : {selected_store}**")
+            st.dataframe(store_metrics)
+
+            # Option pour télécharger les données en CSV
+            csv_data = store_metrics.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Télécharger les données en CSV",
+                data=csv_data,
+                file_name=f'metrics_{selected_store_id}.csv',
+                mime='text/csv'
+            )
 
 
 if __name__ == "__main__":
