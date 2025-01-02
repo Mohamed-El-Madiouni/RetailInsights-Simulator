@@ -3,6 +3,7 @@ import pandas as pd
 import io
 from dotenv import load_dotenv
 import os
+from pandas.api.types import CategoricalDtype
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -91,9 +92,15 @@ def calculate_daily_metrics():
         lambda group: pd.Series({
             "total_visitors": group["visitors"].sum(),
             "total_transactions": group["sales"].sum(),
-            "peak_hour": group.loc[group["sales"].idxmax(), "hour"]
+            "peak_hour_sales": group.loc[group["sales"].idxmax(), "hour"],
+            "peak_hour_visitors": group.loc[group["visitors"].idxmax(), "hour"]
         })
     ).reset_index()
+
+    retail_agg["total_visitors"] = retail_agg["total_visitors"].round(0).astype(int)
+    retail_agg["total_transactions"] = retail_agg["total_transactions"].round(0).astype(int)
+    retail_agg["peak_hour_sales"] = retail_agg["peak_hour_sales"].round(0).astype(int)
+    retail_agg["peak_hour_visitors"] = retail_agg["peak_hour_visitors"].round(0).astype(int)
 
     # Agrégation de sales_data
     sales_agg = sales_data.groupby(["sale_date", "store_id"]).agg(
@@ -101,27 +108,33 @@ def calculate_daily_metrics():
         total_revenue=("sale_amount", "sum")
     ).reset_index().rename(columns={"sale_date": "date"})
 
+    # Arrondir les colonnes
+    sales_agg["total_quantity"] = sales_agg["total_quantity"].round(0).astype(int)
+    sales_agg["total_revenue"] = sales_agg["total_revenue"].round(2)
+
     # Associer sales_data avec products pour calculer les coûts
     sales_with_cost = sales_data.merge(products_data, left_on="product_id", right_on="id")
     sales_cost_agg = sales_with_cost.groupby(["sale_date", "store_id"]).agg(
         total_cost=("quantity", lambda x: (x * sales_with_cost["cost"]).sum()),
     ).reset_index()
 
+    sales_cost_agg["total_cost"] = sales_cost_agg["total_cost"].round(2)
+
     # Calculer le best_selling_product
     best_selling_product = (
-        sales_with_cost.groupby(["sale_date", "store_id", "product_id"])["quantity"]
+        sales_with_cost.groupby(["sale_date", "store_id", "product_id", "name"])["quantity"]
         .sum()
         .reset_index()
         .sort_values(["sale_date", "store_id", "quantity"], ascending=[True, True, False])
         .groupby(["sale_date", "store_id"])
         .first()
         .reset_index()
-        .rename(columns={"product_id": "best_selling_product", "quantity": "max_quantity"})
+        .rename(columns={"product_id": "best_selling_product_id", "name": "best_selling_product_name", "quantity": "max_quantity"})
     )
 
     # Fusionner les deux agrégations
     sales_cost_agg = sales_cost_agg.merge(
-        best_selling_product[["sale_date", "store_id", "best_selling_product"]],
+        best_selling_product[["sale_date", "store_id", "best_selling_product_id", "best_selling_product_name"]],
         on=["sale_date", "store_id"],
         how="left"
     ).rename(columns={"sale_date": "date"})
@@ -131,18 +144,89 @@ def calculate_daily_metrics():
         sales_cost_agg, on=["date", "store_id"], how="outer"
     ).fillna(0)
 
+    # Ajouter une colonne pour le jour de la semaine
+    daily_metrics["day_of_week"] = pd.to_datetime(daily_metrics["date"]).dt.day_name()
+    day_of_week_cat = CategoricalDtype([
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    ], ordered=True)
+    daily_metrics["day_of_week"] = daily_metrics["day_of_week"].astype(day_of_week_cat)
+
+    # Ajouter une moyenne glissante sur les 4 derniers mêmes jours de la semaine par magasin
+    daily_metrics["avg_sales_last_4_weeks"] = round((
+        daily_metrics.groupby(["store_id", "day_of_week"])["total_transactions"]
+        .rolling(window=4, min_periods=1)
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    ), 2)
+    daily_metrics["avg_visitors_last_4_weeks"] = round((
+        daily_metrics.groupby(["store_id", "day_of_week"])["total_visitors"]
+        .rolling(window=4, min_periods=1)
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    ), 2)
+    daily_metrics["avg_revenue_last_4_weeks"] = round((
+        daily_metrics.groupby(["store_id", "day_of_week"])["total_revenue"]
+        .rolling(window=4, min_periods=1)
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    ), 2)
+
     # Calcul des métriques finales
-    daily_metrics["conversion_rate"] = daily_metrics["total_transactions"] / daily_metrics["total_visitors"]
-    daily_metrics["avg_transaction_value"] = daily_metrics["total_revenue"] / daily_metrics["total_transactions"]
-    daily_metrics["revenue_per_visitor"] = daily_metrics["total_revenue"] / daily_metrics["total_visitors"]
-    daily_metrics["cost_per_visitor"] = daily_metrics["total_cost"] / daily_metrics["total_visitors"]
-    daily_metrics["total_margin"] = daily_metrics["total_revenue"] - daily_metrics["total_cost"]
-    daily_metrics["margin_per_visitor"] = daily_metrics["total_margin"] / daily_metrics["total_visitors"]
+    daily_metrics["conversion_rate"] = round(daily_metrics["total_transactions"] * 100 / daily_metrics["total_visitors"], 2)
+    daily_metrics["avg_transaction_value"] = round(daily_metrics["total_revenue"] / daily_metrics["total_transactions"], 2)
+    daily_metrics["revenue_per_visitor"] = round(daily_metrics["total_revenue"] / daily_metrics["total_visitors"], 2)
+    daily_metrics["total_margin"] = round(daily_metrics["total_revenue"] - daily_metrics["total_cost"], 2)
+    daily_metrics["margin_per_visitor"] = round(daily_metrics["total_margin"] / daily_metrics["total_visitors"], 2)
+    daily_metrics["visitors_variation_vs_avg_4w_percent"] = round((
+                                                                daily_metrics["total_visitors"] -
+                                                                daily_metrics["avg_visitors_last_4_weeks"])
+                                                        * 100 / daily_metrics["avg_visitors_last_4_weeks"], 2)
+    daily_metrics["transactions_variation_vs_avg_4w_percent"] = round((
+                                                                daily_metrics["total_transactions"] -
+                                                                daily_metrics["avg_sales_last_4_weeks"])
+                                                        * 100 / daily_metrics["avg_sales_last_4_weeks"], 2)
+    daily_metrics["revenue_variation_vs_avg_4w_percent"] = round((
+                                                                daily_metrics["total_revenue"] -
+                                                                daily_metrics["avg_revenue_last_4_weeks"])
+                                                        * 100 / daily_metrics["avg_revenue_last_4_weeks"], 2)
+    daily_metrics["transactions_amount_variation_vs_avg_4w_percent"] = round((
+                                                                daily_metrics["avg_transaction_value"] -
+                                                                (daily_metrics["avg_revenue_last_4_weeks"] /
+                                                                 daily_metrics["avg_sales_last_4_weeks"]))
+                                                        * 100 / (daily_metrics["avg_revenue_last_4_weeks"] /
+                                                                 daily_metrics["avg_sales_last_4_weeks"]), 2)
+
+    daily_metrics = daily_metrics[[
+        "date",
+        "day_of_week",
+        "store_id",
+        "total_visitors",
+        "avg_visitors_last_4_weeks",
+        "visitors_variation_vs_avg_4w_percent",
+        "total_transactions",
+        "avg_sales_last_4_weeks",
+        "transactions_variation_vs_avg_4w_percent",
+        "total_quantity",
+        "best_selling_product_id",
+        "best_selling_product_name",
+        "total_revenue",
+        "avg_revenue_last_4_weeks",
+        "revenue_variation_vs_avg_4w_percent",
+        "total_cost",
+        "total_margin",
+        "conversion_rate",
+        "avg_transaction_value",
+        "transactions_amount_variation_vs_avg_4w_percent",
+        "revenue_per_visitor",
+        "margin_per_visitor",
+        "peak_hour_sales",
+        "peak_hour_visitors"
+    ]]
 
     # Sauvegarder les métriques enrichies sur S3
     save_parquet_to_s3(daily_metrics, "processed_data/traffic_metrics.parquet")
     print("Métriques enrichies calculées et sauvegardées avec succès.")
-    print(daily_metrics)
+    print(daily_metrics.T)
 
 
 if __name__ == "__main__":
