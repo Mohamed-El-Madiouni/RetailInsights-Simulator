@@ -77,6 +77,39 @@ def plot_theme_metrics(data, metrics, title, period_type):
     st.pyplot(plt)
 
 
+def get_themes(period_type):
+    if period_type == "Quotidien":
+        return {
+            "Performance des visiteurs": [
+                "total_visitors", "avg_visitors_last_4_weeks", "visitors_variation_vs_avg_4w_percent"
+            ],
+            "Performance des transactions": [
+                "total_transactions", "avg_sales_last_4_weeks", "transactions_variation_vs_avg_4w_percent"
+            ],
+            "Quantité et revenus": [
+                "total_quantity", "total_revenue", "avg_revenue_last_4_weeks", "revenue_variation_vs_avg_4w_percent"
+            ],
+            "Marges et coûts": [
+                "total_cost", "total_margin"
+            ],
+            "Efficacité des ventes": [
+                "conversion_rate", "avg_transaction_value", "transactions_amount_variation_vs_avg_4w_percent"
+            ],
+            "Indicateurs spécifiques par visiteur": [
+                "revenue_per_visitor", "margin_per_visitor"
+            ]
+        }
+    else:
+        return {
+            "Performance des visiteurs": ["total_visitors"],
+            "Performance des transactions": ["total_transactions"],
+            "Quantité et revenus": ["total_quantity", "total_revenue"],
+            "Marges et coûts": ["total_cost", "total_margin"],
+            "Efficacité des ventes": ["conversion_rate", "avg_transaction_value"],
+            "Indicateurs spécifiques par visiteur": ["revenue_per_visitor", "margin_per_visitor"]
+        }
+
+
 def main():
     st.title("Visualisation des métriques des magasins")
     st.markdown("### Sélectionnez un magasin, un type de graphique et une période pour afficher les métriques")
@@ -159,26 +192,8 @@ def main():
 
         st.write(f"**Métriques pour le magasin : {selected_store} - {selected_graph_type}**")
 
-        themes = {
-            "Performance des visiteurs": [
-                "total_visitors", "avg_visitors_last_4_weeks", "visitors_variation_vs_avg_4w_percent"
-            ],
-            "Performance des transactions": [
-                "total_transactions", "avg_sales_last_4_weeks", "transactions_variation_vs_avg_4w_percent"
-            ],
-            "Quantité et revenus": [
-                "total_quantity", "total_revenue", "avg_revenue_last_4_weeks", "revenue_variation_vs_avg_4w_percent"
-            ],
-            "Marges et coûts": [
-                "total_cost", "total_margin"
-            ],
-            "Efficacité des ventes": [
-                "conversion_rate", "avg_transaction_value", "transactions_amount_variation_vs_avg_4w_percent"
-            ],
-            "Indicateurs spécifiques par visiteur": [
-                "revenue_per_visitor", "margin_per_visitor"
-            ],
-        }
+        themes = get_themes(selected_graph_type)
+
 
         selected_theme = st.selectbox("Choisissez un thème :", list(themes.keys()))
         if selected_theme:
