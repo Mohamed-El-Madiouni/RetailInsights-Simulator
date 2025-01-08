@@ -39,7 +39,7 @@ def load_data_from_s3(s3_key):
         return pd.DataFrame()
 
 
-def get_metric_groups_and_labels(theme):
+def get_metric_groups_and_labels(theme, period_type):
     groups = {
         "Performance des visiteurs": {
             "group1": {
@@ -67,14 +67,14 @@ def get_metric_groups_and_labels(theme):
         },
         "Quantité et revenus": {
             "group1": {
-                "metrics": ["total_revenue", "avg_revenue_last_4_weeks"],
+                "metrics": ["total_revenue"],
                 "label": "Revenus (€)",
                 "title": "Chiffre d'affaires"
             },
             "group2": {
-                "metrics": ["total_quantity", "revenue_variation_vs_avg_4w_percent"],
-                "label": "Quantité / Variation (%)",
-                "title": "Quantités vendues et variations"
+                "metrics": ["total_quantity"],
+                "label": "Quantité",
+                "title": "Quantités vendues"
             }
         },
         "Marges et coûts": {
@@ -86,7 +86,7 @@ def get_metric_groups_and_labels(theme):
         },
         "Efficacité des ventes": {
             "group1": {
-                "metrics": ["conversion_rate", "transactions_amount_variation_vs_avg_4w_percent"],
+                "metrics": ["conversion_rate"],
                 "label": "Taux (%)",
                 "title": "Taux de conversion"
             },
@@ -104,68 +104,46 @@ def get_metric_groups_and_labels(theme):
             }
         }
     }
-    return groups.get(theme, {})
+
+    if period_type == "Quotidien":
+        # Ajouter les métriques supplémentaires pour le quotidien
+        groups["Quantité et revenus"]["group1"]["metrics"].append("avg_revenue_last_4_weeks")
+        groups["Quantité et revenus"]["group2"]["metrics"].append("revenue_variation_vs_avg_4w_percent")
+
+    if theme in groups:
+        theme_groups = groups[theme].copy()
+
+        if period_type != "Quotidien":
+            # Pour les périodes non quotidiennes, supprimer le groupe des variations
+            # sauf pour "Quantité et revenus"
+            if theme != "Quantité et revenus":
+                if "group2" in theme_groups and any(
+                        "variation" in metric for metric in theme_groups["group2"]["metrics"]):
+                    del theme_groups["group2"]
+            # Supprimer les métriques de moyenne mobile du groupe 1
+            if "group1" in theme_groups:
+                theme_groups["group1"]["metrics"] = [m for m in theme_groups["group1"]["metrics"] if "avg" not in m]
+
+        return theme_groups
+
+    return {}
 
 
 def plot_theme_metrics(data, metrics, title, period_type):
     theme_name = title.split(" - ")[0]
-    metric_groups = get_metric_groups_and_labels(theme_name)
+    metric_groups = get_metric_groups_and_labels(theme_name, period_type)
 
     sum_metrics = [
         'total_visitors', 'total_transactions', 'total_quantity',
-        'total_revenue', 'total_cost', 'total_margin'
+        'total_revenue', 'total_cost', 'total_margin',
+        'avg_revenue_last_4_weeks', 'avg_visitors_last_4_weeks', 'avg_sales_last_4_weeks'  # Ajout de ces métriques
     ]
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
     store_period = title.split(" - ", 1)[1]
 
-    # Cas spécial pour "Quantité et revenus" groupe 2
-    if theme_name == "Quantité et revenus" and "group2" in metric_groups:
-        fig, ax1 = plt.subplots(figsize=(12, 6))
-        ax2 = ax1.twinx()
-
-        # total_quantity sur axe gauche
-        if "total_quantity" in metrics and "total_quantity" in data.columns:
-            plot_data = prepare_plot_data(data, "total_quantity", period_type, 'sum')
-            ax1.plot(plot_data['x'], plot_data['y'], marker='o', label="total_quantity", color=colors[0])
-            ax1.set_ylabel("Quantité")
-
-        # variation sur axe droit
-        if "revenue_variation_vs_avg_4w_percent" in metrics and "revenue_variation_vs_avg_4w_percent" in data.columns:
-            plot_data = prepare_plot_data(data, "revenue_variation_vs_avg_4w_percent", period_type, 'mean')
-            ax2.plot(plot_data['x'], plot_data['y'], marker='s', linestyle='--',
-                     label="revenue_variation_vs_avg_4w_percent", color=colors[1])
-            ax2.set_ylabel("Variation (%)")
-
-        ax1.set_xlabel(period_type)
-        plt.xticks(rotation=90)
-
-        # Combiner les légendes
-        lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-
-        plt.title(f"{metric_groups['group2']['title']} - {store_period}")
-        plt.grid(True)
-        st.pyplot(fig)
-        return
-
-    if not metric_groups:
-        fig, ax1 = plt.subplots(figsize=(12, 6))
-        for i, metric in enumerate(metrics):
-            if metric in data.columns:
-                agg_func = 'sum' if metric in sum_metrics else 'mean'
-                plot_data = prepare_plot_data(data, metric, period_type, agg_func)
-                ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
-
-        ax1.set_xlabel(period_type)
-        ax1.set_ylabel("Valeurs")
-        ax1.grid(True)
-        ax1.legend()
-        plt.xticks(rotation=90)
-        plt.title(title)
-        st.pyplot(fig)
-    else:
-        # Graphique pour le groupe 1
+    # Cas spécial pour "Quantité et revenus"
+    if theme_name == "Quantité et revenus":
+        # Premier graphique (group1) - Revenus
         if "group1" in metric_groups:
             fig1, ax1 = plt.subplots(figsize=(12, 6))
             for i, metric in enumerate(metric_groups["group1"]["metrics"]):
@@ -182,6 +160,75 @@ def plot_theme_metrics(data, metrics, title, period_type):
             plt.title(f"{metric_groups['group1']['title']} - {store_period}")
             st.pyplot(fig1)
 
+        # Deuxième graphique (group2) avec double axe y
+        if "group2" in metric_groups:
+            fig2, ax1 = plt.subplots(figsize=(12, 6))
+            ax2 = ax1.twinx()
+
+            # total_quantity sur axe gauche
+            if "total_quantity" in metrics and "total_quantity" in data.columns:
+                plot_data = prepare_plot_data(data, "total_quantity", period_type, 'sum')
+                ax1.plot(plot_data['x'], plot_data['y'], marker='o', label="total_quantity", color=colors[0])
+                ax1.set_ylabel("Quantité")
+
+            # variation sur axe droit
+            if "revenue_variation_vs_avg_4w_percent" in metrics and "revenue_variation_vs_avg_4w_percent" in data.columns:
+                plot_data = prepare_plot_data(data, "revenue_variation_vs_avg_4w_percent", period_type, 'mean')
+                ax2.plot(plot_data['x'], plot_data['y'], marker='s', linestyle='--',
+                         label="revenue_variation_vs_avg_4w_percent", color=colors[1])
+                ax2.set_ylabel("Variation (%)")
+
+            ax1.set_xlabel(period_type)
+            plt.xticks(rotation=90)
+
+            lines1, labels1 = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+
+            plt.title(f"{metric_groups['group2']['title']} - {store_period}")
+            plt.grid(True)
+            st.pyplot(fig2)
+        return
+
+    if not metric_groups:
+        fig, ax1 = plt.subplots(figsize=(12, 6))
+        for i, metric in enumerate(metrics):
+            if metric in data.columns:
+                agg_func = 'sum' if metric in sum_metrics else 'mean'
+                plot_data = prepare_plot_data(data, metric, period_type, agg_func)
+                ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
+
+        ax1.set_xlabel(period_type)
+        ax1.set_ylabel("Valeurs")
+        ax1.grid(True)
+        ax1.legend()
+        if period_type == "Annuel":
+            plt.xticks(plot_data['x'].unique(), rotation=90)
+        else:
+            plt.xticks(rotation=90)
+        plt.title(title)
+        st.pyplot(fig)
+    else:
+        # Graphique pour le groupe 1
+        if "group1" in metric_groups:
+            fig1, ax1 = plt.subplots(figsize=(12, 6))
+            for i, metric in enumerate(metric_groups["group1"]["metrics"]):
+                if metric in data.columns and metric in metrics:
+                    agg_func = 'sum' if metric in sum_metrics else 'mean'
+                    plot_data = prepare_plot_data(data, metric, period_type, agg_func)
+                    ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
+
+            ax1.set_xlabel(period_type)
+            ax1.set_ylabel(metric_groups["group1"]["label"])
+            ax1.grid(True)
+            ax1.legend()
+            if period_type == "Annuel":
+                plt.xticks(plot_data['x'].unique(), rotation=90)
+            else:
+                plt.xticks(rotation=90)
+            plt.title(f"{metric_groups['group1']['title']} - {store_period}")
+            st.pyplot(fig1)
+
         # Graphique pour le groupe 2 (sauf pour "Quantité et revenus" qui est géré plus haut)
         if "group2" in metric_groups and theme_name != "Quantité et revenus":
             fig2, ax2 = plt.subplots(figsize=(12, 6))
@@ -195,29 +242,38 @@ def plot_theme_metrics(data, metrics, title, period_type):
             ax2.set_ylabel(metric_groups["group2"]["label"])
             ax2.grid(True)
             ax2.legend()
-            plt.xticks(rotation=90)
+            if period_type == "Annuel":
+                plt.xticks(plot_data['x'].unique(), rotation=90)
+            else:
+                plt.xticks(rotation=90)
             plt.title(f"{metric_groups['group2']['title']} - {store_period}")
             st.pyplot(fig2)
 
 
 def prepare_plot_data(data, metric, period_type, agg_func):
-    if period_type == "Mensuel":
-        data_grouped = data.groupby(['year', 'month'])[metric].agg(agg_func).reset_index()
-        data_grouped['x'] = pd.to_datetime(
-            data_grouped['year'].astype(str) + '-' + data_grouped['month'].astype(str).str.zfill(2))
-        return {'x': data_grouped['x'], 'y': data_grouped[metric]}
+    if period_type == "Quotidien":
+        final_data = data.groupby('date')[metric].agg(agg_func).reset_index()
+        return {'x': final_data['date'], 'y': final_data[metric]}
+
+    elif period_type == "Mensuel":
+        data_grouped = data.groupby(['year', 'month', 'store_id'])[metric].agg(agg_func).reset_index()
+        final_data = data_grouped.groupby(['year', 'month'])[metric].agg(agg_func).reset_index()
+        final_data['x'] = pd.to_datetime(
+            final_data['year'].astype(str) + '-' + final_data['month'].astype(str).str.zfill(2))
+        return {'x': final_data['x'], 'y': final_data[metric]}
 
     elif period_type == "Annuel":
-        data_grouped = data.groupby(['year'])[metric].agg(agg_func).reset_index()
-        return {'x': data_grouped['year'], 'y': data_grouped[metric]}
-
-    elif period_type == "Quotidien":
-        return {'x': data['date'], 'y': data[metric]}
+        data_grouped = data.groupby(['year', 'store_id'])[metric].agg(agg_func).reset_index()
+        final_data = data_grouped.groupby('year')[metric].agg(agg_func).reset_index()
+        plt.xticks(final_data['year'].unique())  # Forcer les ticks aux années uniquement
+        return {'x': final_data['year'], 'y': final_data[metric]}
 
     elif period_type == "Trimestriel":
-        data_sorted = data.sort_values('quarter_for_sort')
-        data_grouped = data_sorted.groupby('quarter')[metric].agg(agg_func).reset_index()
-        return {'x': data_grouped['quarter'], 'y': data_grouped[metric]}
+        data_grouped = data.groupby(['quarter', 'store_id', 'quarter_for_sort'])[metric].agg(agg_func).reset_index()
+        final_data = data_grouped.groupby(['quarter', 'quarter_for_sort'])[metric].agg(agg_func).reset_index()
+        final_data = final_data.sort_values('quarter_for_sort')
+        return {'x': final_data['quarter'], 'y': final_data[metric]}
+
 
 def get_themes(period_type):
     if period_type == "Quotidien":
@@ -235,7 +291,7 @@ def get_themes(period_type):
                 "total_cost", "total_margin"
             ],
             "Efficacité des ventes": [
-                "conversion_rate", "avg_transaction_value", "transactions_amount_variation_vs_avg_4w_percent"
+                "conversion_rate", "avg_transaction_value"
             ],
             "Indicateurs spécifiques par visiteur": [
                 "revenue_per_visitor", "margin_per_visitor"
@@ -264,11 +320,15 @@ def main():
         return
 
     store_names = stores_df['name'].unique() if 'name' in stores_df.columns else []
+    store_names = ["Tous les magasins"] + list(store_names)  # Ajouter l'option "Tous les magasins"
     selected_store = st.selectbox("Choisissez un magasin :", store_names)
 
     if selected_store:
-        selected_store_id = stores_df.loc[stores_df['name'] == selected_store, 'id'].values[0]
-        store_metrics = metrics_df[metrics_df['store_id'] == selected_store_id]
+        if selected_store == "Tous les magasins":
+            store_metrics = metrics_df.copy()  # Tous les magasins
+        else:
+            selected_store_id = stores_df.loc[stores_df['name'] == selected_store, 'id'].values[0]
+            store_metrics = metrics_df[metrics_df['store_id'] == selected_store_id]
 
         if store_metrics.empty:
             st.warning("Aucune métrique disponible pour ce magasin.")
@@ -292,7 +352,8 @@ def main():
             # Séparer les colonnes à sommer et à moyenner
             sum_metrics = [
                 'total_visitors', 'total_transactions', 'total_quantity',
-                'total_revenue', 'total_cost', 'total_margin'
+                'total_revenue', 'total_cost', 'total_margin',
+                'avg_revenue_last_4_weeks', 'avg_visitors_last_4_weeks', 'avg_sales_last_4_weeks'
             ]
             mean_metrics = filtered_metrics.select_dtypes(include=['number']).columns.difference(sum_metrics)
 
