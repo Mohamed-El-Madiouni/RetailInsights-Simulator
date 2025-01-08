@@ -405,10 +405,18 @@ def main():
                                f"{selected_theme} - {selected_store} ({selected_graph_type})", selected_graph_type)
 
         csv_data = filtered_metrics.to_csv(index=False).encode('utf-8')
+        file_prefix = "all_stores" if selected_store == "Tous les magasins" else f"store_{selected_store_id}"
+        file_suffix = ""
+
+        if selected_graph_type == "Quotidien":
+            file_suffix = f"_{selected_year}_{selected_month_num}"
+        elif selected_graph_type == "Mensuel":
+            file_suffix = f"_{selected_year}"
+
         st.download_button(
             label="Télécharger les données en CSV",
             data=csv_data,
-            file_name=f'metrics_{selected_store_id}_{selected_graph_type}.csv',
+            file_name=f"metrics_{file_prefix}_{selected_graph_type}{file_suffix}.csv",
             mime='text/csv'
         )
 
