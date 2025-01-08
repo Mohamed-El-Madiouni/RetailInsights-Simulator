@@ -5,6 +5,7 @@ import io
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 import os
+import plotly.graph_objects as go
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -132,123 +133,158 @@ def get_metric_groups_and_labels(theme, period_type):
 def plot_theme_metrics(data, metrics, title, period_type):
     theme_name = title.split(" - ")[0]
     metric_groups = get_metric_groups_and_labels(theme_name, period_type)
+    store_period = title.split(" - ", 1)[1]
 
     sum_metrics = [
         'total_visitors', 'total_transactions', 'total_quantity',
         'total_revenue', 'total_cost', 'total_margin',
-        'avg_revenue_last_4_weeks', 'avg_visitors_last_4_weeks', 'avg_sales_last_4_weeks'  # Ajout de ces métriques
+        'avg_revenue_last_4_weeks', 'avg_visitors_last_4_weeks', 'avg_sales_last_4_weeks'
     ]
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
-    store_period = title.split(" - ", 1)[1]
+
+    def create_base_figure():
+        return go.Figure(
+            layout=go.Layout(
+                title=dict(text=title, x=0.5),
+                xaxis=dict(title=period_type, tickangle=45),
+                yaxis=dict(title="Valeurs", gridcolor='LightGrey'),
+                showlegend=True,
+                template='plotly_white',
+                hovermode='x unified',
+                height=600
+            )
+        )
 
     # Cas spécial pour "Quantité et revenus"
     if theme_name == "Quantité et revenus":
         # Premier graphique (group1) - Revenus
         if "group1" in metric_groups:
-            fig1, ax1 = plt.subplots(figsize=(12, 6))
+            fig1 = create_base_figure()
             for i, metric in enumerate(metric_groups["group1"]["metrics"]):
                 if metric in data.columns and metric in metrics:
                     agg_func = 'sum' if metric in sum_metrics else 'mean'
                     plot_data = prepare_plot_data(data, metric, period_type, agg_func)
-                    ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
+                    fig1.add_trace(go.Scatter(
+                        x=plot_data['x'],
+                        y=plot_data['y'],
+                        mode='lines+markers',
+                        name=metric,
+                        line=dict(color=colors[i])
+                    ))
+            fig1.update_layout(
+                title=f"{metric_groups['group1']['title']} - {store_period}",
+                yaxis_title=metric_groups["group1"]["label"]
+            )
+            st.plotly_chart(fig1, use_container_width=True)
 
-            ax1.set_xlabel(period_type)
-            ax1.set_ylabel(metric_groups["group1"]["label"])
-            ax1.grid(True)
-            ax1.legend()
-            plt.xticks(rotation=90)
-            plt.title(f"{metric_groups['group1']['title']} - {store_period}")
-            st.pyplot(fig1)
-
-        # Deuxième graphique (group2) avec double axe y
+        # Deuxième graphique (group2)
         if "group2" in metric_groups:
-            fig2, ax1 = plt.subplots(figsize=(12, 6))
-            ax2 = ax1.twinx()
+            if period_type == "Quotidien":
+                # Version avec double axe pour données quotidiennes
+                fig2 = create_base_figure()
 
-            # total_quantity sur axe gauche
-            if "total_quantity" in metrics and "total_quantity" in data.columns:
+                # total_quantity sur axe gauche
+                if "total_quantity" in metrics and "total_quantity" in data.columns:
+                    plot_data = prepare_plot_data(data, "total_quantity", period_type, 'sum')
+                    fig2.add_trace(go.Scatter(
+                        x=plot_data['x'],
+                        y=plot_data['y'],
+                        mode='lines+markers',
+                        name='total_quantity',
+                        line=dict(color=colors[0])
+                    ))
+
+                # variation sur axe droit
+                if "revenue_variation_vs_avg_4w_percent" in metrics:
+                    plot_data = prepare_plot_data(data, "revenue_variation_vs_avg_4w_percent", period_type, 'mean')
+                    fig2.add_trace(go.Scatter(
+                        x=plot_data['x'],
+                        y=plot_data['y'],
+                        mode='lines+markers',
+                        name='revenue_variation_vs_avg_4w_percent',
+                        line=dict(color=colors[1], dash='dash'),
+                        yaxis="y2"
+                    ))
+
+                fig2.update_layout(
+                    title=f"{metric_groups['group2']['title']} - {store_period}",
+                    yaxis=dict(title="Quantité", gridcolor='LightGrey'),
+                    yaxis2=dict(title="Variation (%)", overlaying="y", side="right", gridcolor='LightGrey')
+                )
+            else:
+                # Version simple pour les autres périodes
+                fig2 = create_base_figure()
                 plot_data = prepare_plot_data(data, "total_quantity", period_type, 'sum')
-                ax1.plot(plot_data['x'], plot_data['y'], marker='o', label="total_quantity", color=colors[0])
-                ax1.set_ylabel("Quantité")
+                fig2.add_trace(go.Scatter(
+                    x=plot_data['x'],
+                    y=plot_data['y'],
+                    mode='lines+markers',
+                    name='total_quantity',
+                    line=dict(color=colors[0])
+                ))
+                fig2.update_layout(
+                    title=f"{metric_groups['group2']['title']} - {store_period}",
+                    yaxis_title="Quantité"
+                )
 
-            # variation sur axe droit
-            if "revenue_variation_vs_avg_4w_percent" in metrics and "revenue_variation_vs_avg_4w_percent" in data.columns:
-                plot_data = prepare_plot_data(data, "revenue_variation_vs_avg_4w_percent", period_type, 'mean')
-                ax2.plot(plot_data['x'], plot_data['y'], marker='s', linestyle='--',
-                         label="revenue_variation_vs_avg_4w_percent", color=colors[1])
-                ax2.set_ylabel("Variation (%)")
-
-            ax1.set_xlabel(period_type)
-            plt.xticks(rotation=90)
-
-            lines1, labels1 = ax1.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels()
-            ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-
-            plt.title(f"{metric_groups['group2']['title']} - {store_period}")
-            plt.grid(True)
-            st.pyplot(fig2)
+            st.plotly_chart(fig2, use_container_width=True)
         return
 
+    # Cas général
     if not metric_groups:
-        fig, ax1 = plt.subplots(figsize=(12, 6))
+        fig = create_base_figure()
         for i, metric in enumerate(metrics):
             if metric in data.columns:
                 agg_func = 'sum' if metric in sum_metrics else 'mean'
                 plot_data = prepare_plot_data(data, metric, period_type, agg_func)
-                ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
-
-        ax1.set_xlabel(period_type)
-        ax1.set_ylabel("Valeurs")
-        ax1.grid(True)
-        ax1.legend()
-        if period_type == "Annuel":
-            plt.xticks(plot_data['x'].unique(), rotation=90)
-        else:
-            plt.xticks(rotation=90)
-        plt.title(title)
-        st.pyplot(fig)
+                fig.add_trace(go.Scatter(
+                    x=plot_data['x'],
+                    y=plot_data['y'],
+                    mode='lines+markers',
+                    name=metric,
+                    line=dict(color=colors[i])
+                ))
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        # Graphique pour le groupe 1
+        # Graphique pour groupe 1
         if "group1" in metric_groups:
-            fig1, ax1 = plt.subplots(figsize=(12, 6))
+            fig1 = create_base_figure()
             for i, metric in enumerate(metric_groups["group1"]["metrics"]):
                 if metric in data.columns and metric in metrics:
                     agg_func = 'sum' if metric in sum_metrics else 'mean'
                     plot_data = prepare_plot_data(data, metric, period_type, agg_func)
-                    ax1.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
+                    fig1.add_trace(go.Scatter(
+                        x=plot_data['x'],
+                        y=plot_data['y'],
+                        mode='lines+markers',
+                        name=metric,
+                        line=dict(color=colors[i])
+                    ))
+            fig1.update_layout(
+                title=f"{metric_groups['group1']['title']} - {store_period}",
+                yaxis_title=metric_groups["group1"]["label"]
+            )
+            st.plotly_chart(fig1, use_container_width=True)
 
-            ax1.set_xlabel(period_type)
-            ax1.set_ylabel(metric_groups["group1"]["label"])
-            ax1.grid(True)
-            ax1.legend()
-            if period_type == "Annuel":
-                plt.xticks(plot_data['x'].unique(), rotation=90)
-            else:
-                plt.xticks(rotation=90)
-            plt.title(f"{metric_groups['group1']['title']} - {store_period}")
-            st.pyplot(fig1)
-
-        # Graphique pour le groupe 2 (sauf pour "Quantité et revenus" qui est géré plus haut)
+        # Graphique pour groupe 2
         if "group2" in metric_groups and theme_name != "Quantité et revenus":
-            fig2, ax2 = plt.subplots(figsize=(12, 6))
+            fig2 = create_base_figure()
             for i, metric in enumerate(metric_groups["group2"]["metrics"]):
                 if metric in data.columns and metric in metrics:
                     agg_func = 'sum' if metric in sum_metrics else 'mean'
                     plot_data = prepare_plot_data(data, metric, period_type, agg_func)
-                    ax2.plot(plot_data['x'], plot_data['y'], marker='o', label=metric, color=colors[i])
-
-            ax2.set_xlabel(period_type)
-            ax2.set_ylabel(metric_groups["group2"]["label"])
-            ax2.grid(True)
-            ax2.legend()
-            if period_type == "Annuel":
-                plt.xticks(plot_data['x'].unique(), rotation=90)
-            else:
-                plt.xticks(rotation=90)
-            plt.title(f"{metric_groups['group2']['title']} - {store_period}")
-            st.pyplot(fig2)
-
+                    fig2.add_trace(go.Scatter(
+                        x=plot_data['x'],
+                        y=plot_data['y'],
+                        mode='lines+markers',
+                        name=metric,
+                        line=dict(color=colors[i])
+                    ))
+            fig2.update_layout(
+                title=f"{metric_groups['group2']['title']} - {store_period}",
+                yaxis_title=metric_groups["group2"]["label"]
+            )
+            st.plotly_chart(fig2, use_container_width=True)
 
 def prepare_plot_data(data, metric, period_type, agg_func):
     if period_type == "Quotidien":
