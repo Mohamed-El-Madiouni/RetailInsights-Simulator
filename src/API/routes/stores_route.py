@@ -20,7 +20,7 @@ class StoreResponse(BaseModel):
 def load_stores():
     """Charge les magasins depuis le fichier JSON 'stores.json'."""
     try:
-        with open('../../data_api/stores.json', 'r', encoding='utf-8') as f:
+        with open('data_api/stores.json', 'r', encoding='utf-8') as f:
             stores = json.load(f)
         return stores
     except FileNotFoundError:
