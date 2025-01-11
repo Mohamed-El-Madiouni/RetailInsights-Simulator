@@ -200,34 +200,51 @@ def calculate_final_metrics(df):
     """Version optimisée du calcul des métriques finales"""
     metrics = df.copy()
 
+    # Ajouter des colonnes moyennes glissantes manquantes avec des valeurs par défaut
+    for col in ["avg_visitors_last_4_weeks", "avg_sales_last_4_weeks", "avg_revenue_last_4_weeks"]:
+        if col not in metrics.columns:
+            metrics[col] = pd.NA
+
     # Calculer toutes les métriques d'un coup
     metrics_dict = {
-        "conversion_rate": lambda x: (x["total_transactions"] * 100 / x["total_visitors"]),
-        "avg_transaction_value": lambda x: (x["total_revenue"] / x["total_transactions"]),
-        "revenue_per_visitor": lambda x: (x["total_revenue"] / x["total_visitors"]),
-        "total_margin": lambda x: (x["total_revenue"] - x["total_cost"]),
+        "conversion_rate": lambda x: (x["total_transactions"] * 100 / x["total_visitors"])
+        if pd.notna(x["total_transactions"]) and pd.notna(x["total_visitors"]) and x["total_visitors"] > 0
+        else pd.NA,
+        "avg_transaction_value": lambda x: (x["total_revenue"] / x["total_transactions"])
+        if pd.notna(x["total_revenue"]) and pd.notna(x["total_transactions"]) and x["total_transactions"] > 0
+        else pd.NA,
+        "revenue_per_visitor": lambda x: (x["total_revenue"] / x["total_visitors"])
+        if pd.notna(x["total_revenue"]) and pd.notna(x["total_visitors"]) and x["total_visitors"] > 0
+        else pd.NA,
+        "total_margin": lambda x: (x["total_revenue"] - x["total_cost"])
+        if pd.notna(x["total_revenue"]) and pd.notna(x["total_cost"])
+        else pd.NA,
         "margin_per_visitor": lambda x: ((x["total_revenue"] - x["total_cost"]) / x["total_visitors"])
+        if pd.notna(x["total_revenue"]) and pd.notna(x["total_cost"]) and pd.notna(x["total_visitors"]) and x["total_visitors"] > 0
+        else pd.NA,
     }
 
     for col, func in metrics_dict.items():
-        metrics[col] = func(metrics).round(2)
+        metrics[col] = metrics.apply(func, axis=1)
 
     # Calculer les variations en une fois
     for metric, (col, avg_col) in {
         "visitors": ("total_visitors", "avg_visitors_last_4_weeks"),
         "transactions": ("total_transactions", "avg_sales_last_4_weeks"),
-        "revenue": ("total_revenue", "avg_revenue_last_4_weeks")
+        "revenue": ("total_revenue", "avg_revenue_last_4_weeks"),
     }.items():
         metrics[f"{metric}_variation_vs_avg_4w_percent"] = (
-                (metrics[col] - metrics[avg_col]) * 100 / metrics[avg_col]
-        ).round(2)
+            (metrics[col] - metrics[avg_col]) * 100 / metrics[avg_col]
+        ).where(pd.notna(metrics[avg_col]), pd.NA)
 
     # Calcul spécial pour transactions_amount
     metrics["transactions_amount_variation_vs_avg_4w_percent"] = (
-            (metrics["avg_transaction_value"] -
-             (metrics["avg_revenue_last_4_weeks"] / metrics["avg_sales_last_4_weeks"]))
-            * 100 / (metrics["avg_revenue_last_4_weeks"] / metrics["avg_sales_last_4_weeks"])
-    ).round(2)
+        (metrics["avg_transaction_value"] -
+         (metrics["avg_revenue_last_4_weeks"] / metrics["avg_sales_last_4_weeks"]))
+        * 100 / (metrics["avg_revenue_last_4_weeks"] / metrics["avg_sales_last_4_weeks"])
+    ).where(
+        pd.notna(metrics["avg_revenue_last_4_weeks"]) & pd.notna(metrics["avg_sales_last_4_weeks"]), pd.NA
+    )
 
     return metrics
 
