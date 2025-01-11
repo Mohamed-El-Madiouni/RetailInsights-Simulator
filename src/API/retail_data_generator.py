@@ -1,9 +1,10 @@
+import json
+import os
 import random
 import sys
 from datetime import datetime
-import json
 from io import TextIOWrapper
-import os
+
 from src.API.sale_generator import SaleGenerator
 
 
@@ -14,8 +15,8 @@ def get_current_date():
 def load_stores(data_dir):
     """Charge les magasins depuis le fichier JSON 'stores.json'."""
     try:
-        file_path = os.path.join(data_dir, 'stores.json')
-        with open(file_path, 'r', encoding='utf-8') as f:
+        file_path = os.path.join(data_dir, "stores.json")
+        with open(file_path, "r", encoding="utf-8") as f:
             stores = json.load(f)
         return stores
     except FileNotFoundError:
@@ -23,17 +24,25 @@ def load_stores(data_dir):
         return []
 
 
-def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberrant=None, normal_test=None):
+def generate_data(
+    date_str,
+    hour,
+    store,
+    data_dir,
+    force_null=None,
+    force_aberrant=None,
+    normal_test=None,
+):
     """Génère un nombre de visiteurs et de ventes basé sur l'heure de la journée."""
     date = datetime.strptime(date_str, "%Y-%m-%d")
     day_of_week = date.weekday()  # 0 = lundi, 6 = dimanche
 
     # Vérifier si l'heure est dans les horaires d'ouverture
-    opening_hour = int(store['opening_hour'])
-    closing_hour = int(store['closing_hour'])
+    opening_hour = int(store["opening_hour"])
+    closing_hour = int(store["closing_hour"])
 
-    max_visitors = store['capacity']
-    max_sales = max_visitors*0.4
+    max_visitors = store["capacity"]
+    max_sales = max_visitors * 0.4
 
     # Si le magasin est fermé à cette heure, on ne génère pas de visiteurs/ventes
     if hour < opening_hour or hour >= closing_hour:
@@ -51,44 +60,62 @@ def generate_data(date_str, hour, store, data_dir, force_null=None, force_aberra
         else:
             # Générer le nombre de visiteurs basé sur l'heure
             if hour < 8:
-                visitors = random.randint(int(round(max_visitors*0.05, 0)), int(round(max_visitors*0.35, 0)))
-                sales = random.randint(int(round(max_sales*0.05, 0)), int(round(max_sales*0.35, 0)))
+                visitors = random.randint(
+                    int(round(max_visitors * 0.05, 0)),
+                    int(round(max_visitors * 0.35, 0)),
+                )
+                sales = random.randint(
+                    int(round(max_sales * 0.05, 0)), int(round(max_sales * 0.35, 0))
+                )
             elif 8 <= hour < 20:
-                visitors = random.randint(int(round(max_visitors*0.2, 0)), int(round(max_visitors*0.8, 0)))
-                sales = random.randint(int(round(max_sales * 0.2, 0)), int(round(max_sales*0.8, 0)))
+                visitors = random.randint(
+                    int(round(max_visitors * 0.2, 0)), int(round(max_visitors * 0.8, 0))
+                )
+                sales = random.randint(
+                    int(round(max_sales * 0.2, 0)), int(round(max_sales * 0.8, 0))
+                )
             else:
-                visitors = random.randint(int(round(max_visitors*0.05, 0)), int(round(max_visitors*0.3, 0)))
-                sales = random.randint(int(round(max_sales*0.05, 0)), int(round(max_sales*0.3, 0)))
+                visitors = random.randint(
+                    int(round(max_visitors * 0.05, 0)),
+                    int(round(max_visitors * 0.3, 0)),
+                )
+                sales = random.randint(
+                    int(round(max_sales * 0.05, 0)), int(round(max_sales * 0.3, 0))
+                )
 
         if is_aberrant and normal_test is None:
             visitors = random.randint(10000, 50000)
 
         # Appliquer la capacité maximale du magasin
-        if visitors is not None and visitors > store['capacity'] and not is_aberrant:
-            visitors = store['capacity']
+        if visitors is not None and visitors > store["capacity"] and not is_aberrant:
+            visitors = store["capacity"]
 
     if day_of_week in [5, 6]:  # Le week-end a tendance à avoir plus de monde
         visitors = int(visitors * 1.25) if visitors is not None else None
         sales = int(sales * 1.15) if sales is not None else None
 
     # Générer des ventes pour chaque heure (en fonction de la date et du nombre de ventes)
-    sale_generator = SaleGenerator(date_str=date_str, num_sales=sales, store=store, hour=hour, data_dir=data_dir)
+    sale_generator = SaleGenerator(
+        date_str=date_str, num_sales=sales, store=store, hour=hour, data_dir=data_dir
+    )
     sales_data = sale_generator.generate_sales()
 
     return {
-        'store_id': store['id'],
-        'store_name': store['name'],
-        'date': date_str,
-        'hour': hour,
-        'visitors': visitors,
-        'sales': sales
+        "store_id": store["id"],
+        "store_name": store["name"],
+        "date": date_str,
+        "hour": hour,
+        "visitors": visitors,
+        "sales": sales,
     }, sales_data
 
 
 class RetailDataGenerator:
-    def __init__(self, data_dir='data_api'):
+    def __init__(self, data_dir="data_api"):
         self.data_dir = data_dir
-        self.stores = load_stores(self.data_dir)  # Charger les magasins depuis le fichier JSON
+        self.stores = load_stores(
+            self.data_dir
+        )  # Charger les magasins depuis le fichier JSON
         self.retail_data = []  # Données retail
         self.sales_buffer = []  # Données des ventes
 
@@ -105,7 +132,9 @@ class RetailDataGenerator:
             else:
                 for hour in range(24):
                     # Générer des données de retail pour chaque heure
-                    retail_entry, sales = generate_data(date_str, hour, store, self.data_dir)
+                    retail_entry, sales = generate_data(
+                        date_str, hour, store, self.data_dir
+                    )
                     self.retail_data.append(retail_entry)
                     self.sales_buffer.extend(sales)
 
@@ -115,37 +144,37 @@ class RetailDataGenerator:
 
     def save_retail_data_to_file(self):
         """Sauvegarde les données retail dans un fichier JSON."""
-        file_name = os.path.join(self.data_dir, 'retail_data.json')
+        file_name = os.path.join(self.data_dir, "retail_data.json")
 
         # Charger les ventes existantes si le fichier existe
         existing_sales = []
         if os.path.exists(file_name):
-            with open(file_name, 'r', encoding='utf-8') as f:
+            with open(file_name, "r", encoding="utf-8") as f:
                 existing_sales = json.load(f)
 
         # Ajouter les nouvelles ventes
         existing_sales.extend(self.retail_data)
 
-        with open(file_name, 'w', encoding='utf-8') as f:
+        with open(file_name, "w", encoding="utf-8") as f:
             assert isinstance(f, TextIOWrapper)
             json.dump(existing_sales, f, ensure_ascii=False, indent=4)
         print("Données retail écrites dans 'retail_data.json'.")
 
     def save_sales_to_file(self):
         """Sauvegarde les données des ventes dans un fichier JSON."""
-        file_path = os.path.join(self.data_dir, 'sales.json')
+        file_path = os.path.join(self.data_dir, "sales.json")
 
         # Charger les ventes existantes si le fichier existe
         existing_sales = []
         if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 existing_sales = json.load(f)
 
         # Ajouter les nouvelles ventes
         existing_sales.extend(self.sales_buffer)
 
         # Écrire toutes les ventes dans le fichier au format liste JSON
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             assert isinstance(f, TextIOWrapper)
             json.dump(existing_sales, f, ensure_ascii=False, indent=4)
         print("Toutes les ventes ont été écrites dans 'sales.json'.")
@@ -157,13 +186,17 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         date_test = get_current_date()
         generator.generate_data_day(date_test)
-        print(f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
-              f"et 'data_api/sales.json' pour la date {date_test}")
+        print(
+            f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
+            f"et 'data_api/sales.json' pour la date {date_test}"
+        )
     else:
         for i in range(len(sys.argv)):
             if i == 0:
                 continue
             date_test = sys.argv[i]
             generator.generate_data_day(date_test)
-            print(f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
-                  f"et 'data_api/sales.json' pour la date {date_test}")
+            print(
+                f"Données générées et sauvegardées dans 'data_api/retail_data.json' "
+                f"et 'data_api/sales.json' pour la date {date_test}"
+            )

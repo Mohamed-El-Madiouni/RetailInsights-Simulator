@@ -1,7 +1,8 @@
-from fastapi import APIRouter
-from typing import List
-from pydantic import BaseModel
 import json
+from typing import List
+
+from fastapi import APIRouter
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ class StoreResponse(BaseModel):
 def load_stores():
     """Charge les magasins depuis le fichier JSON 'stores.json'."""
     try:
-        with open('data_api/stores.json', 'r', encoding='utf-8') as f:
+        with open("data_api/stores.json", "r", encoding="utf-8") as f:
             stores = json.load(f)
         return stores
     except FileNotFoundError:

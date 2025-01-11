@@ -1,22 +1,29 @@
-import pandas as pd
 import io
-from src.data_processing.transform.aggregate_daily_metrics import calculate_final_metrics, calculate_moving_averages, calculate_store_ratio, aggregate_retail_data, process_best_selling, append_to_existing_metrics, read_parquet_from_s3_filtered
 from unittest.mock import MagicMock, patch
+
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+from src.data_processing.transform.aggregate_daily_metrics import (
+    aggregate_retail_data, append_to_existing_metrics, calculate_final_metrics,
+    calculate_moving_averages, calculate_store_ratio, process_best_selling,
+    read_parquet_from_s3_filtered)
 
 
 def test_calculate_final_metrics():
     # Données d'entrée factices
-    data = pd.DataFrame({
-        "total_transactions": [10, 20, 0],
-        "total_visitors": [100, 200, 0],
-        "total_revenue": [1000, 2500, 0],
-        "total_cost": [500, 1500, 0],
-        "avg_visitors_last_4_weeks": [90, 180, 100],
-        "avg_sales_last_4_weeks": [8, 18, 5],
-        "avg_revenue_last_4_weeks": [950, 2400, 500]
-    })
+    data = pd.DataFrame(
+        {
+            "total_transactions": [10, 20, 0],
+            "total_visitors": [100, 200, 0],
+            "total_revenue": [1000, 2500, 0],
+            "total_cost": [500, 1500, 0],
+            "avg_visitors_last_4_weeks": [90, 180, 100],
+            "avg_sales_last_4_weeks": [8, 18, 5],
+            "avg_revenue_last_4_weeks": [950, 2400, 500],
+        }
+    )
 
     # Calculer les métriques
     metrics = calculate_final_metrics(data)
@@ -31,23 +38,27 @@ def test_calculate_final_metrics():
 
 def test_calculate_moving_averages():
     # Données d'entrée factices avec la colonne `date`
-    historical_data = pd.DataFrame({
-        "store_id": ["store_1", "store_1", "store_1"],
-        "day_of_week": ["Monday", "Monday", "Monday"],
-        "total_transactions": [10, 20, 30],
-        "total_visitors": [100, 200, 300],
-        "total_revenue": [1000, 2000, 3000],
-        "date": ["2023-12-01", "2023-12-08", "2023-12-15"]  # Dates historiques
-    })
+    historical_data = pd.DataFrame(
+        {
+            "store_id": ["store_1", "store_1", "store_1"],
+            "day_of_week": ["Monday", "Monday", "Monday"],
+            "total_transactions": [10, 20, 30],
+            "total_visitors": [100, 200, 300],
+            "total_revenue": [1000, 2000, 3000],
+            "date": ["2023-12-01", "2023-12-08", "2023-12-15"],  # Dates historiques
+        }
+    )
 
-    current_data = pd.DataFrame({
-        "store_id": ["store_1"],
-        "day_of_week": ["Monday"],
-        "total_transactions": [40],
-        "total_visitors": [400],
-        "total_revenue": [4000],
-        "date": ["2023-12-22"]  # Date actuelle
-    })
+    current_data = pd.DataFrame(
+        {
+            "store_id": ["store_1"],
+            "day_of_week": ["Monday"],
+            "total_transactions": [40],
+            "total_visitors": [400],
+            "total_revenue": [4000],
+            "date": ["2023-12-22"],  # Date actuelle
+        }
+    )
 
     # Calculer les moyennes glissantes
     result = calculate_moving_averages(current_data, historical_data)
@@ -60,12 +71,14 @@ def test_calculate_moving_averages():
 
 def test_calculate_final_metrics_with_missing_data():
     # Données avec des valeurs manquantes
-    data = pd.DataFrame({
-        "total_transactions": [10, None, 0],
-        "total_visitors": [100, None, 0],
-        "total_revenue": [1000, None, 0],
-        "total_cost": [500, None, 0]
-    })
+    data = pd.DataFrame(
+        {
+            "total_transactions": [10, None, 0],
+            "total_visitors": [100, None, 0],
+            "total_revenue": [1000, None, 0],
+            "total_cost": [500, None, 0],
+        }
+    )
 
     # Calculer les métriques
     metrics = calculate_final_metrics(data)
@@ -77,26 +90,34 @@ def test_calculate_final_metrics_with_missing_data():
 
 
 def test_calculate_store_ratio():
-    data = pd.DataFrame({
-        "visitors": [100, 6000, 200],
-        "sales": [10, 15, 20],
-    })
+    data = pd.DataFrame(
+        {
+            "visitors": [100, 6000, 200],
+            "sales": [10, 15, 20],
+        }
+    )
 
     # Calculer les ratios
     result = calculate_store_ratio(data)
 
     # Vérifier les résultats
-    assert result["visitors"].tolist() == [100, 150, 200]  # Le magasin avec 6000 visiteurs est ajusté
+    assert result["visitors"].tolist() == [
+        100,
+        150,
+        200,
+    ]  # Le magasin avec 6000 visiteurs est ajusté
 
 
 def test_aggregate_retail_data():
-    data = pd.DataFrame({
-        "date": ["2023-12-01", "2023-12-01", "2023-12-02"],
-        "store_id": ["store_1", "store_1", "store_2"],
-        "visitors": [100, 200, 300],
-        "sales": [10, 20, 30],
-        "hour": [10, 14, 16],
-    })
+    data = pd.DataFrame(
+        {
+            "date": ["2023-12-01", "2023-12-01", "2023-12-02"],
+            "store_id": ["store_1", "store_1", "store_2"],
+            "visitors": [100, 200, 300],
+            "sales": [10, 20, 30],
+            "hour": [10, 14, 16],
+        }
+    )
 
     result = aggregate_retail_data(data)
 
@@ -108,13 +129,15 @@ def test_aggregate_retail_data():
 
 
 def test_process_best_selling():
-    data = pd.DataFrame({
-        "sale_date": ["2023-12-01", "2023-12-01", "2023-12-02"],
-        "store_id": ["store_1", "store_1", "store_2"],
-        "product_id": ["prod_1", "prod_2", "prod_3"],
-        "name": ["Product A", "Product B", "Product C"],
-        "quantity": [10, 20, 15],
-    })
+    data = pd.DataFrame(
+        {
+            "sale_date": ["2023-12-01", "2023-12-01", "2023-12-02"],
+            "store_id": ["store_1", "store_1", "store_2"],
+            "product_id": ["prod_1", "prod_2", "prod_3"],
+            "name": ["Product A", "Product B", "Product C"],
+            "quantity": [10, 20, 15],
+        }
+    )
 
     result = process_best_selling(data)
 
@@ -128,16 +151,20 @@ def test_append_to_existing_metrics():
     mock_s3 = MagicMock()
 
     # Nouvelles métriques
-    new_metrics = pd.DataFrame({
-        "date": ["2023-12-01"],
-        "store_id": ["store_1"],
-        "total_visitors": [300],
-    })
+    new_metrics = pd.DataFrame(
+        {
+            "date": ["2023-12-01"],
+            "store_id": ["store_1"],
+            "total_visitors": [300],
+        }
+    )
 
     # Patcher l'objet S3 utilisé dans la fonction
     with patch("src.data_processing.transform.aggregate_daily_metrics.s3", mock_s3):
         # Appeler la fonction
-        append_to_existing_metrics(new_metrics, "processed_data/traffic_metrics.parquet", is_test=True)
+        append_to_existing_metrics(
+            new_metrics, "processed_data/traffic_metrics.parquet", is_test=True
+        )
 
         # Vérifier que le fichier est bien uploadé sur S3
         mock_s3.upload_fileobj.assert_called_once()
@@ -151,16 +178,18 @@ def test_read_parquet_from_s3_filtered():
     mock_s3.list_objects_v2.return_value = {
         "Contents": [
             {"Key": "extracted_data/data_2023-12-01.parquet"},
-            {"Key": "extracted_data/data_2023-12-02.parquet"}
+            {"Key": "extracted_data/data_2023-12-02.parquet"},
         ]
     }
 
     # Créer un fichier Parquet valide en mémoire
-    data = pd.DataFrame({
-        "date": ["2023-12-02"],
-        "store_id": ["store_1"],
-        "visitors": [100],
-    })
+    data = pd.DataFrame(
+        {
+            "date": ["2023-12-02"],
+            "store_id": ["store_1"],
+            "visitors": [100],
+        }
+    )
     buffer = io.BytesIO()
     table = pa.Table.from_pandas(data)
     pq.write_table(table, buffer)
@@ -179,7 +208,9 @@ def test_read_parquet_from_s3_filtered():
     # Patcher l'objet S3 utilisé dans la fonction
     with patch("src.data_processing.transform.aggregate_daily_metrics.s3", mock_s3):
         # Appeler la fonction avec une date déjà traitée
-        result = read_parquet_from_s3_filtered("extracted_data/", processed_dates={"2023-12-01"})
+        result = read_parquet_from_s3_filtered(
+            "extracted_data/", processed_dates={"2023-12-01"}
+        )
 
         # Vérifier le DataFrame
         assert not result.empty  # Doit contenir les données du fichier valide

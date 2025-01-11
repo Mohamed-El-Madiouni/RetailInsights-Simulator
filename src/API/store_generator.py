@@ -1,12 +1,12 @@
-import random
-import uuid
 import json
 import os
+import random
+import uuid
 from io import TextIOWrapper
 
 
 class StoreGenerator:
-    def __init__(self, data_dir='data_api'):
+    def __init__(self, data_dir="data_api"):
         self.data_dir = data_dir
         self.stores = []
 
@@ -16,20 +16,24 @@ class StoreGenerator:
         """
         for i in range(num_stores):
             store_name = f"Magasin_{i+1}"
-            location = random.choice(['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'])
-            capacity = random.randint(100, 1500)  # Nombre de clients qu'un magasin peut accueillir
+            location = random.choice(["Paris", "Lyon", "Marseille", "Nice", "Toulouse"])
+            capacity = random.randint(
+                100, 1500
+            )  # Nombre de clients qu'un magasin peut accueillir
 
             # Heures d'ouverture et de fermeture
-            opening_hour = random.choice(['7', '8', '9'])
-            closing_hour = random.choice(['19', '20', '21', '22'])
-            self.stores.append({
-                'id': str(uuid.uuid4()),
-                'name': store_name,
-                'location': location,
-                'capacity': capacity,
-                'opening_hour': opening_hour,
-                'closing_hour': closing_hour
-            })
+            opening_hour = random.choice(["7", "8", "9"])
+            closing_hour = random.choice(["19", "20", "21", "22"])
+            self.stores.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": store_name,
+                    "location": location,
+                    "capacity": capacity,
+                    "opening_hour": opening_hour,
+                    "closing_hour": closing_hour,
+                }
+            )
 
     def save_stores(self, filename="stores.json"):
         """Sauvegarde les magasins dans un fichier JSON dans le dossier spécifié."""
@@ -40,7 +44,7 @@ class StoreGenerator:
         filepath = os.path.join(self.data_dir, filename)
 
         # Sauvegarde les données dans un fichier JSON
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             assert isinstance(f, TextIOWrapper)
             json.dump(self.stores, f, ensure_ascii=False, indent=4)
 

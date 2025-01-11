@@ -1,10 +1,10 @@
-from fastapi import APIRouter
-from typing import List, Optional, Union
-from pydantic import BaseModel
 import json
 from datetime import datetime
-from fastapi.responses import JSONResponse
+from typing import List, Optional, Union
 
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ class RetailDataResponse(BaseModel):
 def load_retail_data():
     """Charge les données de retail depuis le fichier JSON 'retail_data.json'."""
     try:
-        with open('data_api/retail_data.json', 'r', encoding='utf-8') as f:
+        with open("data_api/retail_data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         return data
     except FileNotFoundError:
@@ -58,14 +58,15 @@ async def get_visitors(date: str):
     # Filtrer les données pour la date donnée
     response = [
         RetailDataResponse(
-            store_id=entry['store_id'],
-            store_name=entry['store_name'],
-            date=entry['date'],
-            hour=entry['hour'],
-            visitors=entry['visitors'],
-            sales=entry['sales']
+            store_id=entry["store_id"],
+            store_name=entry["store_name"],
+            date=entry["date"],
+            hour=entry["hour"],
+            visitors=entry["visitors"],
+            sales=entry["sales"],
         )
-        for entry in retail_data if entry['date'] == date
+        for entry in retail_data
+        if entry["date"] == date
     ]
 
     return response
@@ -94,14 +95,15 @@ async def get_store_visitors(date: str, store_id: str):
     # Filtrer les données pour la date donnée
     response = [
         RetailDataResponse(
-            store_id=entry['store_id'],
-            store_name=entry['store_name'],
-            date=entry['date'],
-            hour=entry['hour'],
-            visitors=entry['visitors'],
-            sales=entry['sales']
+            store_id=entry["store_id"],
+            store_name=entry["store_name"],
+            date=entry["date"],
+            hour=entry["hour"],
+            visitors=entry["visitors"],
+            sales=entry["sales"],
         )
-        for entry in retail_data if entry['date'] == date and entry['store_id'] == store_id
+        for entry in retail_data
+        if entry["date"] == date and entry["store_id"] == store_id
     ]
 
     return response

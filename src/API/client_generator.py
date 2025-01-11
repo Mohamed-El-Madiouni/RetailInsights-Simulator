@@ -1,16 +1,23 @@
 import json
 import os
-from faker import Faker
 import random
 from io import TextIOWrapper
 
+from faker import Faker
+
 
 class ClientGenerator:
-    def __init__(self, data_dir='data_api'):
+    def __init__(self, data_dir="data_api"):
         self.data_dir = data_dir
         self.fake = Faker()
         self.clients = []
-        self.cities = ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse']  # Liste des villes
+        self.cities = [
+            "Paris",
+            "Lyon",
+            "Marseille",
+            "Nice",
+            "Toulouse",
+        ]  # Liste des villes
 
     def generate_clients(self, num_clients=20000):
         """
@@ -27,21 +34,25 @@ class ClientGenerator:
                 # Sinon, générer un âge réaliste entre 18 et 80
                 age = random.randint(18, 80)
 
-            gender = random.choice(['Homme', 'Femme'])
-            has_loyalty_card = random.random() < 0.3  # 30% des clients ont une carte de fidélité
+            gender = random.choice(["Homme", "Femme"])
+            has_loyalty_card = (
+                random.random() < 0.3
+            )  # 30% des clients ont une carte de fidélité
 
             # Choisir une ville aléatoire
             city = random.choice(self.cities)
 
             # Ajouter les informations du client
-            self.clients.append({
-                'id': self.fake.uuid4(),
-                'name': name,
-                'age': age,
-                'gender': gender,
-                'loyalty_card': has_loyalty_card,
-                'city': city
-            })
+            self.clients.append(
+                {
+                    "id": self.fake.uuid4(),
+                    "name": name,
+                    "age": age,
+                    "gender": gender,
+                    "loyalty_card": has_loyalty_card,
+                    "city": city,
+                }
+            )
 
     def save_clients(self, filename="clients.json"):
         """Sauvegarde les clients dans un fichier JSON dans le dossier spécifié."""
@@ -52,7 +63,7 @@ class ClientGenerator:
         filepath = os.path.join(self.data_dir, filename)
 
         # Sauvegarde les données dans un fichier JSON
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             assert isinstance(f, TextIOWrapper)
             json.dump(self.clients, f, ensure_ascii=False, indent=4)
 

@@ -1,9 +1,9 @@
-from fastapi import APIRouter
-from typing import List, Union
-from pydantic import BaseModel
 import json
-from fastapi.responses import JSONResponse
+from typing import List, Union
 
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ class ClientResponse(BaseModel):
 def load_clients():
     """Charge les clients depuis le fichier JSON 'clients.json'."""
     try:
-        with open('data_api/clients.json', 'r', encoding='utf-8') as f:
+        with open("data_api/clients.json", "r", encoding="utf-8") as f:
             clients = json.load(f)
         return clients
     except FileNotFoundError:
@@ -47,7 +47,7 @@ async def get_clients(city: str):
 
     # Filtrer les clients par la ville
     filtered_clients = [
-        client for client in clients if client['city'].lower() == city.lower()
+        client for client in clients if client["city"].lower() == city.lower()
     ]
 
     # Si aucun client n'est trouvé pour la ville spécifiée

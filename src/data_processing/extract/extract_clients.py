@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from src.data_processing.extract.utils import fetch_from_api, save_to_s3
 
 S3_FOLDER = "extracted_data"
@@ -10,12 +11,12 @@ def fetch_cities():
     Récupère les villes à partir du fichier clients.json.
     """
     cities = []
-    file_name = os.path.join('data_api', 'clients.json')
+    file_name = os.path.join("data_api", "clients.json")
     if os.path.exists(file_name):
-        with open(file_name, 'r', encoding='utf-8') as f:
+        with open(file_name, "r", encoding="utf-8") as f:
             for line in json.load(f):
-                if line['city'] not in cities:
-                    cities.append(line['city'])
+                if line["city"] not in cities:
+                    cities.append(line["city"])
     else:
         print("Le fichier clients.json n'existe pas.")
         raise FileNotFoundError("Le fichier clients.json n'existe pas.")

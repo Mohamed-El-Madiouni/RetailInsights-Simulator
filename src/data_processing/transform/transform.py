@@ -1,8 +1,9 @@
+import io
+import os
+
 import boto3
 import pandas as pd
-import io
 from dotenv import load_dotenv
-import os
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -12,7 +13,7 @@ s3 = boto3.client(
     "s3",
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION")
+    region_name=os.getenv("AWS_REGION"),
 )
 
 BUCKET_NAME = "retail-insights-bucket"
@@ -43,18 +44,22 @@ def read_parquet_files_from_s3(folder_prefix):
         key = obj["Key"]
 
         # Vérifier si c'est un fichier Parquet directement sous extracted_data/
-        if key.endswith(".parquet") and "/" not in key[len(folder_prefix):]:
+        if key.endswith(".parquet") and "/" not in key[len(folder_prefix) :]:
             files_in_root.append(key)
         else:
             # Identifier le sous-dossier
             for subfolder in target_subfolders:
-                if key.startswith(f"{folder_prefix}{subfolder}/") and key.endswith(".parquet"):
+                if key.startswith(f"{folder_prefix}{subfolder}/") and key.endswith(
+                    ".parquet"
+                ):
                     folder = "/".join(key.split("/")[:-1])
                     files_by_folder.setdefault(folder, []).append(key)
 
     # Traiter les fichiers directement dans extracted_data/
     for file_key in files_in_root:
-        print(f"Lecture du fichier Parquet dans la racine : s3://{BUCKET_NAME}/{file_key}")
+        print(
+            f"Lecture du fichier Parquet dans la racine : s3://{BUCKET_NAME}/{file_key}"
+        )
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_key)
         buffer = io.BytesIO(response["Body"].read())
         df = pd.read_parquet(buffer)

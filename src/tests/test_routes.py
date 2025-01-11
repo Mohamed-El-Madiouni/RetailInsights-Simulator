@@ -1,7 +1,9 @@
-import pytest_asyncio
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
+
 from src.API.main import app
+
 
 @pytest_asyncio.fixture
 async def async_client():

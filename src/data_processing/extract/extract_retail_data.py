@@ -1,7 +1,8 @@
-import pandas as pd
 import sys
 from datetime import datetime
-from utils import fetch_from_api, save_to_s3, read_parquet_from_s3
+
+import pandas as pd
+from utils import fetch_from_api, read_parquet_from_s3, save_to_s3
 
 # Paramètres S3
 S3_FOLDER = "extracted_data/retail_data"
@@ -25,7 +26,9 @@ def fetch_and_save_retail_data(date):
             existing_data = read_parquet_from_s3(s3_key)
             if existing_data is not None:
                 # Ajouter les nouvelles données aux anciennes
-                updated_data = pd.concat([existing_data, pd.DataFrame(new_data)], ignore_index=True)
+                updated_data = pd.concat(
+                    [existing_data, pd.DataFrame(new_data)], ignore_index=True
+                )
                 updated_data.drop_duplicates(inplace=True)
             else:
                 updated_data = pd.DataFrame(new_data)

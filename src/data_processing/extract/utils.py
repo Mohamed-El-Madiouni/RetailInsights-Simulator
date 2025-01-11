@@ -1,6 +1,6 @@
+import io
 import os
 import tempfile
-import io
 
 import boto3
 import pandas as pd
@@ -15,7 +15,7 @@ s3 = boto3.client(
     "s3",
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION")
+    region_name=os.getenv("AWS_REGION"),
 )
 
 # Paramètres S3
@@ -40,10 +40,11 @@ def save_with_pandas(data, output_file):
 
 # Sauvegarder les données en Parquet avec Spark
 def save_with_spark(data, output_file):
-    spark = SparkSession.builder \
-        .appName("API Data to Parquet") \
-        .master("local[*]") \
+    spark = (
+        SparkSession.builder.appName("API Data to Parquet")
+        .master("local[*]")
         .getOrCreate()
+    )
 
     df = spark.read.json(spark.sparkContext.parallelize([data]))
     df.write.parquet(output_file, mode="overwrite", compression="snappy")
@@ -57,26 +58,38 @@ def fetch_from_api(url, is_test=False):
     if is_test:
         # Simuler une requête HTTP pendant les tests
         from unittest.mock import MagicMock
+
         mock_response = MagicMock()
         if "Paris" in url:
-            mock_response.json.return_value = [{"id": "1", "name": "Client A", "city": "Paris"}]
+            mock_response.json.return_value = [
+                {"id": "1", "name": "Client A", "city": "Paris"}
+            ]
         elif "Lyon" in url:
-            mock_response.json.return_value = [{"id": "2", "name": "Client B", "city": "Lyon"}]
+            mock_response.json.return_value = [
+                {"id": "2", "name": "Client B", "city": "Lyon"}
+            ]
         elif "Nice" in url:
-            mock_response.json.return_value = [{"id": "3", "name": "Client C", "city": "Nice"}]
+            mock_response.json.return_value = [
+                {"id": "3", "name": "Client C", "city": "Nice"}
+            ]
         else:
             mock_response.json.return_value = []
         mock_response.status_code = 200
         return mock_response.json()
     else:
         import requests
+
         response = requests.get(url)
         if response.status_code == 200:
             print(f"Données récupérées depuis {url}")
             return response.json()
         else:
-            print(f"Erreur lors de la récupération des données depuis {url}: {response.status_code}")
-            raise Exception(f"Erreur lors de la récupération des données depuis {url}: {response.status_code}")
+            print(
+                f"Erreur lors de la récupération des données depuis {url}: {response.status_code}"
+            )
+            raise Exception(
+                f"Erreur lors de la récupération des données depuis {url}: {response.status_code}"
+            )
 
 
 def save_to_s3(data, s3_key):
