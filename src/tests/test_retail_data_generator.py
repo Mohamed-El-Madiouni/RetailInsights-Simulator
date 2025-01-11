@@ -13,6 +13,10 @@ from src.API.store_generator import StoreGenerator
 
 # Test la méthode de génération de produits
 def test_generate_products():
+    """
+    Teste la génération de produits avec la classe ProductGenerator.
+    Vérifie que les produits générés contiennent les informations nécessaires et que le fichier est correctement sauvegardé.
+    """
     # Utiliser un dossier de données spécifique pour les tests
     test_data_dir = os.path.join("data_test")
 
@@ -38,6 +42,10 @@ def test_generate_products():
 
 # Test la méthode de génération de clients
 def test_generate_clients():
+    """
+    Teste la génération de clients avec la classe ClientGenerator.
+    Vérifie que les clients générés contiennent les informations nécessaires et que le fichier est correctement sauvegardé.
+    """
     # Utiliser un dossier de données spécifique pour les tests
     test_data_dir = os.path.join("data_test")
 
@@ -57,6 +65,10 @@ def test_generate_clients():
 
 # Test la méthode de génération de magasins
 def test_generate_stores():
+    """
+    Teste la génération de magasins avec la classe StoreGenerator.
+    Vérifie que les magasins générés contiennent les informations nécessaires et que le fichier est correctement sauvegardé.
+    """
     # Utiliser un dossier de données spécifique pour les tests
     test_data_dir = os.path.join("data_test")
 
@@ -76,6 +88,10 @@ def test_generate_stores():
 
 # Test la génération des données pour un magasin donné
 def test_generate_data_valid():
+    """
+    Teste la génération de données retail valides pour un magasin donné.
+    Vérifie que les données générées respectent les contraintes de capacité et d'heures d'ouverture du magasin.
+    """
     test_data_dir = os.path.join("data_test")
 
     store = {
@@ -109,6 +125,10 @@ def test_generate_data_valid():
 
 # Test la génération de données nulles
 def test_generate_data_null():
+    """
+    Teste la génération de données nulles pour un magasin.
+    Vérifie que les visiteurs et les ventes sont définis comme `None` lorsqu'une contrainte impose des données nulles.
+    """
     test_data_dir = os.path.join("data_test")
 
     store = {
@@ -132,6 +152,10 @@ def test_generate_data_null():
 
 # Test la génération de données aberrantes
 def test_generate_data_aberrant():
+    """
+    Teste la génération de données aberrantes pour un magasin.
+    Vérifie que les données générées dépassent les contraintes de capacité du magasin lorsque des données aberrantes sont forcées.
+    """
     test_data_dir = os.path.join("data_test")
 
     store = {
@@ -154,6 +178,10 @@ def test_generate_data_aberrant():
 
 # Test la création d'une journée complète de données pour un magasin
 def test_generate_data_day():
+    """
+    Teste la génération de données retail pour une journée complète avec RetailDataGenerator.
+    Vérifie que les données générées sont complètes et conformes pour chaque magasin.
+    """
     test_data_dir = os.path.join("data_test")
     file_name = os.path.join(test_data_dir, "retail_data.json")
     generator = RetailDataGenerator(test_data_dir)
@@ -178,6 +206,10 @@ def test_generate_data_day():
 
 
 def test_validate_sales_consistency():
+    """
+    Teste la cohérence des données de ventes entre les fichiers `sales.json` et `retail_data.json`.
+    Compare les totaux des ventes calculés à partir des deux fichiers en utilisant DuckDB.
+    """
     query1 = """
     SELECT
         store_id,

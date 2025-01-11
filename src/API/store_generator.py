@@ -7,12 +7,21 @@ from io import TextIOWrapper
 
 class StoreGenerator:
     def __init__(self, data_dir="data_api"):
+        """
+        Initialise la classe StoreGenerator.
+
+        Args:
+            data_dir (str): Répertoire où les fichiers JSON seront sauvegardés.
+        """
         self.data_dir = data_dir
         self.stores = []
 
     def generate_stores(self, num_stores=10):
         """
-        Génère une liste de magasins avec un nom, emplacement, capacité, heures d'ouverture et de fermeture aléatoires.
+        Génère une liste de magasins avec des caractéristiques aléatoires.
+
+        Args:
+            num_stores (int): Nombre de magasins à générer. Par défaut, 10.
         """
         for i in range(num_stores):
             store_name = f"Magasin_{i+1}"
@@ -36,7 +45,12 @@ class StoreGenerator:
             )
 
     def save_stores(self, filename="stores.json"):
-        """Sauvegarde les magasins dans un fichier JSON dans le dossier spécifié."""
+        """
+        Sauvegarde la liste des magasins générés dans un fichier JSON.
+
+        Args:
+            filename (str): Nom du fichier dans lequel sauvegarder les magasins. Par défaut, 'stores.json'.
+        """
         # Vérifie si le dossier spécifié existe, sinon le crée
         os.makedirs(self.data_dir, exist_ok=True)
 
@@ -49,10 +63,16 @@ class StoreGenerator:
             json.dump(self.stores, f, ensure_ascii=False, indent=4)
 
     def get_stores(self):
+        """
+        Retourne la liste des magasins générés.
+
+        Returns:
+            list: Liste des magasins.
+        """
         return self.stores
 
 
-# Exemple d'utilisation
+# Exemple d'utilisation pour générer et sauvegarder des magasins.
 if __name__ == "__main__":
     store_generator = StoreGenerator()
     store_generator.generate_stores()

@@ -12,6 +12,12 @@ from src.data_processing.transform.aggregate_daily_metrics import (
 
 
 def test_calculate_final_metrics():
+    """
+    Teste la fonction `calculate_final_metrics`.
+
+    Vérifie que les métriques calculées, telles que le taux de conversion, la valeur moyenne des transactions,
+    et la marge, sont correctes pour un ensemble de données d'entrée factices.
+    """
     # Données d'entrée factices
     data = pd.DataFrame(
         {
@@ -37,6 +43,12 @@ def test_calculate_final_metrics():
 
 
 def test_calculate_moving_averages():
+    """
+    Teste la fonction `calculate_final_metrics`.
+
+    Vérifie que les métriques calculées, telles que le taux de conversion, la valeur moyenne des transactions,
+    et la marge, sont correctes pour un ensemble de données d'entrée factices.
+    """
     # Données d'entrée factices avec la colonne `date`
     historical_data = pd.DataFrame(
         {
@@ -70,6 +82,11 @@ def test_calculate_moving_averages():
 
 
 def test_calculate_final_metrics_with_missing_data():
+    """
+    Teste la fonction `calculate_final_metrics` avec des données manquantes.
+
+    Vérifie que la fonction gère correctement les valeurs manquantes et ne produit pas d'erreurs lors du calcul.
+    """
     # Données avec des valeurs manquantes
     data = pd.DataFrame(
         {
@@ -90,6 +107,12 @@ def test_calculate_final_metrics_with_missing_data():
 
 
 def test_calculate_store_ratio():
+    """
+    Teste la fonction `calculate_store_ratio`.
+
+    Vérifie que les ratios des visiteurs et des ventes sont correctement ajustés,
+    notamment pour les cas où les visiteurs dépassent un seuil aberrant.
+    """
     data = pd.DataFrame(
         {
             "visitors": [100, 6000, 200],
@@ -109,6 +132,12 @@ def test_calculate_store_ratio():
 
 
 def test_aggregate_retail_data():
+    """
+    Teste la fonction `aggregate_retail_data`.
+
+    Vérifie que les données retail sont correctement agrégées pour chaque magasin et date,
+    et que les heures de pointe des ventes et des visiteurs sont correctement identifiées.
+    """
     data = pd.DataFrame(
         {
             "date": ["2023-12-01", "2023-12-01", "2023-12-02"],
@@ -129,6 +158,12 @@ def test_aggregate_retail_data():
 
 
 def test_process_best_selling():
+    """
+    Teste la fonction `process_best_selling`.
+
+    Vérifie que le produit le plus vendu est correctement identifié pour chaque magasin et chaque date,
+    en fonction des quantités vendues.
+    """
     data = pd.DataFrame(
         {
             "sale_date": ["2023-12-01", "2023-12-01", "2023-12-02"],
@@ -147,6 +182,12 @@ def test_process_best_selling():
 
 
 def test_append_to_existing_metrics():
+    """
+    Teste la fonction `append_to_existing_metrics`.
+
+    Vérifie que les nouvelles métriques sont correctement ajoutées au fichier existant et
+    que l'upload sur S3 est effectué correctement.
+    """
     # Mock S3 client
     mock_s3 = MagicMock()
 
@@ -171,6 +212,12 @@ def test_append_to_existing_metrics():
 
 
 def test_read_parquet_from_s3_filtered():
+    """
+    Teste la fonction `read_parquet_from_s3_filtered`.
+
+    Vérifie que les fichiers Parquet dans S3 sont correctement filtrés en fonction des dates traitées,
+    et que les données valides sont correctement chargées dans un DataFrame.
+    """
     # Mock S3 client
     mock_s3 = MagicMock()
 

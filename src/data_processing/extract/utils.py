@@ -25,6 +25,15 @@ S3_FOLDER = "extracted_data/sales"
 
 # Créer le dossier de sortie s'il n'existe pas
 def create_output_folder(folder_name="data"):
+    """
+    Crée un dossier local pour sauvegarder les fichiers, s'il n'existe pas.
+
+    Args:
+        folder_name (str): Nom du dossier à créer. Par défaut, 'data'.
+
+    Returns:
+        str: Le nom du dossier créé.
+    """
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
         print(f"Dossier créé : {folder_name}")
@@ -33,6 +42,13 @@ def create_output_folder(folder_name="data"):
 
 # Sauvegarder les données en Parquet avec Pandas
 def save_with_pandas(data, output_file):
+    """
+    Sauvegarde les données au format Parquet en utilisant Pandas.
+
+    Args:
+        data (list | dict): Données à sauvegarder.
+        output_file (str): Chemin du fichier de sortie.
+    """
     df = pd.DataFrame(data)
     df.to_parquet(output_file, engine="pyarrow", compression="snappy")
     print(f"Fichier sauvegardé avec Pandas : {output_file}")
@@ -40,6 +56,13 @@ def save_with_pandas(data, output_file):
 
 # Sauvegarder les données en Parquet avec Spark
 def save_with_spark(data, output_file):
+    """
+    Sauvegarde les données au format Parquet en utilisant Apache Spark.
+
+    Args:
+        data (list | dict): Données à sauvegarder.
+        output_file (str): Chemin du fichier de sortie.
+    """
     spark = (
         SparkSession.builder.appName("API Data to Parquet")
         .master("local[*]")
@@ -55,6 +78,19 @@ def save_with_spark(data, output_file):
 
 # Récupérer des données depuis une API
 def fetch_from_api(url, is_test=False):
+    """
+    Récupère les données depuis une API via une requête HTTP GET.
+
+    Args:
+        url (str): URL de l'API.
+        is_test (bool): Si True, simule une réponse pour les tests. Par défaut, False.
+
+    Returns:
+        list | dict: Données récupérées depuis l'API.
+
+    Raises:
+        Exception: Si une erreur HTTP est rencontrée.
+    """
     if is_test:
         # Simuler une requête HTTP pendant les tests
         from unittest.mock import MagicMock
@@ -96,8 +132,9 @@ def save_to_s3(data, s3_key):
     """
     Sauvegarde les données au format Parquet directement sur S3.
 
-    :param data: Les données (liste ou DataFrame).
-    :param s3_key: Chemin du fichier dans le bucket S3 (inclut le dossier et le nom du fichier).
+    Args:
+        data (list | pd.DataFrame): Données à sauvegarder.
+        s3_key (str): Chemin du fichier dans le bucket S3.
     """
     # Vérifier si les données sont déjà un DataFrame
     if not isinstance(data, pd.DataFrame):
@@ -114,10 +151,13 @@ def save_to_s3(data, s3_key):
 
 def read_parquet_from_s3(s3_key):
     """
-    Lire un fichier Parquet depuis S3 et le charger dans un DataFrame Pandas.
+    Lit un fichier Parquet depuis S3 et le charge dans un DataFrame Pandas.
 
-    :param s3_key: Chemin du fichier dans le bucket S3.
-    :return: DataFrame Pandas contenant les données du fichier.
+    Args:
+        s3_key (str): Chemin du fichier dans le bucket S3.
+
+    Returns:
+        pd.DataFrame: Données du fichier chargé.
     """
     response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
     buffer = io.BytesIO(response["Body"].read())

@@ -8,7 +8,16 @@ from src.API.store_generator import StoreGenerator
 
 
 def load_products(data_dir):
-    """Charge les produits depuis le fichier JSON 'products.json'."""
+    """
+    Charge les produits depuis le fichier JSON 'products.json'.
+
+    Args:
+        data_dir (str): Répertoire contenant le fichier 'products.json'.
+
+    Returns:
+        list: Liste des produits chargés depuis le fichier.
+        []: Si le fichier est introuvable.
+    """
     try:
         file_path = os.path.join(data_dir, "products.json")
         with open(file_path, "r", encoding="utf-8") as f:
@@ -20,7 +29,16 @@ def load_products(data_dir):
 
 
 def load_clients(data_dir):
-    """Charge les clients depuis le fichier JSON 'clients.json'."""
+    """
+    Charge les clients depuis le fichier JSON 'clients.json'.
+
+    Args:
+        data_dir (str): Répertoire contenant le fichier 'clients.json'.
+
+    Returns:
+        list: Liste des clients chargés depuis le fichier.
+        []: Si le fichier est introuvable.
+    """
     try:
         file_path = os.path.join(data_dir, "clients.json")
         with open(file_path, "r", encoding="utf-8") as f:
@@ -33,10 +51,16 @@ def load_clients(data_dir):
 
 def generate_random_time(hour):
     """
-    Génère une heure aléatoire sous la forme d'un objet datetime.time pour une heure donnée.
+    Génère une heure aléatoire sous la forme d'une chaîne au format 'HH:MM:SS'.
 
-    :param hour: L'heure fixe (0-23) pour le champ HH.
-    :return: Un objet datetime.time représentant l'heure.
+    Args:
+        hour (int): Heure fixe (0-23) pour le champ HH.
+
+    Returns:
+        str: Heure aléatoire au format 'HH:MM:SS'.
+
+    Raises:
+        ValueError: Si l'heure est en dehors de l'intervalle [0, 23].
     """
     if not (0 <= hour <= 23):
         raise ValueError("L'heure doit être entre 0 et 23 inclus.")
@@ -47,6 +71,16 @@ def generate_random_time(hour):
 
 
 class SaleGenerator:
+    """
+    Classe permettant de générer des ventes aléatoires pour un magasin.
+
+    Args:
+        date_str (str): Date pour laquelle générer les ventes, au format 'YYYY-MM-DD'.
+        num_sales (int): Nombre de ventes à générer.
+        store (dict): Informations sur le magasin.
+        hour (int): Heure de la journée pour laquelle générer les ventes.
+        data_dir (str): Répertoire contenant les données JSON. Par défaut, 'data_api'.
+    """
     def __init__(self, date_str, num_sales, store, hour, data_dir="data_api"):
         self.products = load_products(data_dir)
         self.clients = load_clients(data_dir)
@@ -65,6 +99,9 @@ class SaleGenerator:
     def generate_sales(self):
         """
         Génère des ventes aléatoires pour un nombre donné de transactions.
+
+        Returns:
+            list: Liste des ventes générées.
         """
         if self.num_sales is not None:
             for _ in range(self.num_sales):
@@ -111,6 +148,13 @@ class SaleGenerator:
     def _find_client_for_store(self, store):
         """
         Trouve un client dont la ville correspond à celle du magasin.
+
+        Args:
+            store (dict): Informations sur le magasin.
+
+        Returns:
+            dict: Informations sur le client trouvé.
+            None: Si aucun client n'est trouvé pour cette ville.
         """
         clients_in_city = self.clients_by_city.get(store["location"], [])
         if clients_in_city:
@@ -121,10 +165,21 @@ class SaleGenerator:
             return None
 
     def get_sales(self):
+        """
+        Retourne la liste des ventes générés.
+
+        Returns:
+            list: Liste des ventes.
+        """
         return self.sales
 
     def save_sales_to_file(self, data_dir="data_api"):
-        """Sauvegarder les ventes générées dans un fichier JSON."""
+        """
+        Sauvegarde les ventes générées dans un fichier JSON 'sales.json'.
+
+        Args:
+            data_dir (str): Répertoire où le fichier sera sauvegardé.
+        """
         # Vérifier si le dossier spécifié existe, sinon le créer
         os.makedirs(self.data_dir, exist_ok=True)
         file_path = os.path.join(self.data_dir, "sales.json")
@@ -146,7 +201,7 @@ class SaleGenerator:
         print("écriture dans le fichier 'sales.json'")
 
 
-# Exemple d'utilisation
+# Exemple d'utilisation pour générer et sauvegarder des ventes pour une date donnée.
 if __name__ == "__main__":
     date_test = "2024-12-14"  # Exemple de date à renseigner
     sale_generator = SaleGenerator(

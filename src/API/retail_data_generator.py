@@ -9,11 +9,26 @@ from src.API.sale_generator import SaleGenerator
 
 
 def get_current_date():
+    """
+    Retourne la date actuelle au format 'YYYY-MM-DD'.
+
+    Returns:
+        str: Date actuelle sous forme de chaîne.
+    """
     return datetime.now().strftime("%Y-%m-%d")
 
 
 def load_stores(data_dir):
-    """Charge les magasins depuis le fichier JSON 'stores.json'."""
+    """
+    Charge les informations des magasins depuis le fichier 'stores.json'.
+
+    Args:
+        data_dir (str): Répertoire contenant le fichier 'stores.json'.
+
+    Returns:
+        list: Liste des magasins chargés depuis le fichier.
+        []: Si le fichier est introuvable.
+    """
     try:
         file_path = os.path.join(data_dir, "stores.json")
         with open(file_path, "r", encoding="utf-8") as f:
@@ -33,7 +48,23 @@ def generate_data(
     force_aberrant=None,
     normal_test=None,
 ):
-    """Génère un nombre de visiteurs et de ventes basé sur l'heure de la journée."""
+    """
+    Génère des données de visiteurs et de ventes pour un magasin à une heure donnée.
+
+    Args:
+        date_str (str): La date pour laquelle les données sont générées, au format 'YYYY-MM-DD'.
+        hour (int): L'heure pour laquelle les données sont générées.
+        store (dict): Informations sur le magasin (e.g., capacité, horaires d'ouverture).
+        data_dir (str): Répertoire contenant les données JSON.
+        force_null (bool, optional): Force les données nulles si True. Par défaut, None.
+        force_aberrant (bool, optional): Force les données aberrantes si True. Par défaut, None.
+        normal_test (bool, optional): Mode test, désactive certains comportements aléatoires. Par défaut, None.
+
+    Returns:
+        tuple: Contient deux éléments :
+            dict: Données retail pour l'heure spécifiée.
+            list: Liste des données des ventes générées.
+    """
     date = datetime.strptime(date_str, "%Y-%m-%d")
     day_of_week = date.weekday()  # 0 = lundi, 6 = dimanche
 
@@ -111,6 +142,12 @@ def generate_data(
 
 
 class RetailDataGenerator:
+    """
+    Classe pour générer et gérer les données retail et les ventes.
+
+    Args:
+        data_dir (str): Répertoire où les fichiers JSON seront lus et sauvegardés.
+    """
     def __init__(self, data_dir="data_api"):
         self.data_dir = data_dir
         self.stores = load_stores(
@@ -120,6 +157,13 @@ class RetailDataGenerator:
         self.sales_buffer = []  # Données des ventes
 
     def generate_data_day(self, date_str, is_test=None):
+        """
+        Génère des données retail et de ventes pour une journée complète.
+
+        Args:
+            date_str (str): La date pour laquelle générer les données, au format 'YYYY-MM-DD'.
+            is_test (bool, optional): Si True, génère des données uniquement pour une heure. Par défaut, None.
+        """
         # Réinitialiser les buffers de données avant de générer pour une nouvelle date
         self.retail_data = []
         self.sales_buffer = []
@@ -143,7 +187,11 @@ class RetailDataGenerator:
         self.save_sales_to_file()
 
     def save_retail_data_to_file(self):
-        """Sauvegarde les données retail dans un fichier JSON."""
+        """
+        Sauvegarde les données retail générées dans le fichier 'retail_data.json'.
+
+        Les données existantes dans le fichier seront préservées et complétées.
+        """
         file_name = os.path.join(self.data_dir, "retail_data.json")
 
         # Charger les ventes existantes si le fichier existe
@@ -161,7 +209,11 @@ class RetailDataGenerator:
         print("Données retail écrites dans 'retail_data.json'.")
 
     def save_sales_to_file(self):
-        """Sauvegarde les données des ventes dans un fichier JSON."""
+        """
+        Sauvegarde les données des ventes générées dans le fichier 'sales.json'.
+
+        Les données existantes dans le fichier seront préservées et complétées.
+        """
         file_path = os.path.join(self.data_dir, "sales.json")
 
         # Charger les ventes existantes si le fichier existe
@@ -180,7 +232,7 @@ class RetailDataGenerator:
         print("Toutes les ventes ont été écrites dans 'sales.json'.")
 
 
-# Exemple d'utilisation
+# Point d'entrée pour générer des données retail et des ventes pour une ou plusieurs dates.
 if __name__ == "__main__":
     generator = RetailDataGenerator()
     if len(sys.argv) < 2:

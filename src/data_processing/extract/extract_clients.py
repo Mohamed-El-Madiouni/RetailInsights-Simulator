@@ -8,7 +8,13 @@ S3_FOLDER = "extracted_data"
 
 def fetch_cities():
     """
-    Récupère les villes à partir du fichier clients.json.
+    Récupère la liste unique des villes à partir du fichier 'clients.json'.
+
+    Returns:
+        list: Liste des villes uniques extraites du fichier 'clients.json'.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'clients.json' n'existe pas.
     """
     cities = []
     file_name = os.path.join("data_api", "clients.json")
@@ -25,7 +31,13 @@ def fetch_cities():
 
 def fetch_and_save_clients(is_test=False):
     """
-    Récupère et sauvegarde les données clients sur S3.
+    Récupère les données clients pour chaque ville depuis l'API et les sauvegarde sur S3.
+
+    Args:
+        is_test (bool): Si True, utilise une URL de test pour les requêtes API.
+
+    Raises:
+        Exception: Si une erreur survient lors de l'extraction des données pour une ville.
     """
     base_url = "http://test" if is_test else "http://127.0.0.1:8000"
     cities = fetch_cities()
@@ -45,5 +57,6 @@ def fetch_and_save_clients(is_test=False):
     save_to_s3(all_clients, s3_key)
 
 
+# Point d'entrée pour exécuter la fonction de récupération et de sauvegarde des clients.
 if __name__ == "__main__":
     fetch_and_save_clients()

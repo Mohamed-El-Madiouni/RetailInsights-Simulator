@@ -21,9 +21,16 @@ BUCKET_NAME = "retail-insights-bucket"
 
 def read_parquet_files_from_s3(folder_prefix):
     """
-    Lit et affiche les fichiers Parquet dans `extracted_data` et concatène les fichiers dans `sales` et `retail_data`.
+    Lit et concatène les fichiers Parquet depuis un dossier S3.
 
-    :param folder_prefix: Préfixe S3 représentant le dossier contenant les fichiers/dossiers Parquet.
+    Identifie les fichiers dans la racine du dossier et concatène les fichiers
+    dans les sous-dossiers spécifiques tels que `sales` et `retail_data`.
+
+    Args:
+        folder_prefix (str): Préfixe S3 représentant le dossier contenant les fichiers/dossiers Parquet.
+
+    Returns:
+        None: Affiche les DataFrames concaténés ou les fichiers trouvés.
     """
     # Sous-dossiers cibles pour concaténation
     target_subfolders = ["sales", "retail_data"]
@@ -86,7 +93,7 @@ def read_parquet_files_from_s3(folder_prefix):
             print(concatenated_df.head())
 
 
-# Exemple d'utilisation
+# Point d'entrée pour exécuter la lecture et l'affichage des fichiers Parquet depuis S3.
 if __name__ == "__main__":
     folder_prefix = "extracted_data/"  # Dossier racine dans S3
     read_parquet_files_from_s3(folder_prefix)

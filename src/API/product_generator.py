@@ -7,6 +7,12 @@ from io import TextIOWrapper
 
 class ProductGenerator:
     def __init__(self, data_dir="data_api"):
+        """
+        Initialise la classe ProductGenerator.
+
+        Args:
+            data_dir (str): Répertoire où les fichiers JSON seront sauvegardés.
+        """
         self.data_dir = data_dir
         self.categories = ["Électronique", "Mode", "Alimentation", "Beauté", "Meubles"]
         self.product_names = [
@@ -26,7 +32,10 @@ class ProductGenerator:
 
     def generate_products(self, num_products=50):
         """
-        Génère une liste de produits avec des catégories, des prix et un coût aléatoire.
+        Génère une liste de produits avec des catégories, des prix et un coût aléatoires.
+
+        Args:
+            num_products (int): Nombre de produits à générer. Par défaut, 50.
         """
         for i in range(num_products):
             product_name = random.choice(self.product_names)
@@ -89,7 +98,15 @@ class ProductGenerator:
             )
 
     def save_products(self, filename="products.json"):
-        """Sauvegarde les produits dans un fichier JSON dans le dossier spécifié."""
+        """
+        Sauvegarde la liste des produits générés dans un fichier JSON.
+
+        Args:
+            filename (str): Nom du fichier dans lequel sauvegarder les produits. Par défaut, 'products.json'.
+
+        Raises:
+            AssertionError: Si l'objet de fichier n'est pas une instance de TextIOWrapper.
+        """
         # Vérifie si le dossier 'data_api' existe, sinon le crée
         os.makedirs(self.data_dir, exist_ok=True)
 
@@ -102,10 +119,16 @@ class ProductGenerator:
             json.dump(self.products, f, ensure_ascii=False, indent=4)
 
     def get_products(self):
+        """
+        Retourne la liste des produits générés.
+
+        Returns:
+            list: Liste des produits.
+        """
         return self.products
 
 
-# Exemple d'utilisation
+# Exemple d'utilisation de la classe ProductGenerator pour générer et sauvegarder des produits.
 if __name__ == "__main__":
     product_generator = ProductGenerator()
     product_generator.generate_products()

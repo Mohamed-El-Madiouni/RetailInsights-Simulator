@@ -10,7 +10,14 @@ S3_FOLDER = "extracted_data/retail_data"
 
 def fetch_and_save_retail_data(date):
     """
-    Récupère et sauvegarde les données retail_data sur S3.
+    Récupère les données retail_data pour une date donnée depuis l'API,
+    les combine avec les données existantes sur S3, et les sauvegarde.
+
+    Args:
+        date (str): La date pour laquelle récupérer les données, au format 'YYYY-MM-DD'.
+
+    Raises:
+        ValueError: Si aucune donnée n'est récupérée pour la date spécifiée.
     """
     url = f"http://127.0.0.1:8000/retail_data?date={date}"
     new_data = fetch_from_api(url)  # Récupère les nouvelles données depuis l'API
@@ -43,6 +50,8 @@ def fetch_and_save_retail_data(date):
         raise ValueError(f"Aucune donnée récupérée pour la date {date}.")
 
 
+# Point d'entrée pour exécuter la récupération et la sauvegarde des données retail_data.
+# L'utilisateur doit fournir une date au format 'YYYY-MM-DD' en argument.
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Vous devez renseigner une date en argument (format : YYYY-MM-DD)")

@@ -15,6 +15,9 @@ API_PROCESS = None
 def start_api():
     """
     Démarre l'API avec uvicorn en arrière-plan.
+
+    Exceptions:
+        RuntimeError: Si l'API ne peut pas être démarrée.
     """
     global API_PROCESS
     API_PROCESS = subprocess.Popen(
@@ -45,6 +48,7 @@ default_args = {
     "retries": 1,
 }
 
+# Le DAG est planifié pour s'exécuter tous les jours à 11h50 (UTC).
 with DAG(
     dag_id="full_pipeline_dag",
     default_args=default_args,
@@ -82,7 +86,7 @@ with DAG(
         "python src/data_processing/extract/extract_retail_data.py",
     )
 
-    # Tâche 5 : Supprimer les fichiers temporaires
+    # Tâche 5 : Supprimer les fichiers temporaires pour libérer de l'espace et éviter les conflits lors de la prochaine exécution.
     cleanup_files = BashOperator(
         task_id="cleanup_files",
         bash_command="rm -rf ~/RetailInsights-Simulator/data_api/sales.json "

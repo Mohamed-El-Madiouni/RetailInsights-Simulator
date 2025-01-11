@@ -32,6 +32,15 @@ METRICS_KEY = "processed_data/traffic_metrics.parquet"
 
 @st.cache_data
 def load_data_from_s3(s3_key):
+    """
+    Charge les données d'un fichier Parquet depuis un bucket S3.
+
+    Args:
+        s3_key (str): Chemin du fichier dans le bucket S3.
+
+    Returns:
+        pd.DataFrame: Données chargées sous forme de DataFrame Pandas.
+    """
     try:
         response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
         buffer = io.BytesIO(response["Body"].read())
@@ -42,6 +51,16 @@ def load_data_from_s3(s3_key):
 
 
 def get_metric_groups_and_labels(theme, period_type):
+    """
+    Récupère les groupes de métriques et leurs étiquettes pour un thème et un type de période spécifiques.
+
+    Args:
+        theme (str): Thème des métriques (ex. "Quantité et revenus").
+        period_type (str): Type de période (ex. "Quotidien", "Mensuel").
+
+    Returns:
+        dict: Groupes de métriques organisés par thème.
+    """
     groups = {
         "Performance des visiteurs": {
             "group1": {
@@ -140,6 +159,15 @@ def get_metric_groups_and_labels(theme, period_type):
 
 
 def plot_theme_metrics(data, metrics, title, period_type):
+    """
+    Génère et affiche des graphiques interactifs pour un thème donné.
+
+    Args:
+        data (pd.DataFrame): Données à afficher.
+        metrics (list): Liste des métriques à inclure dans le graphique.
+        title (str): Titre du graphique.
+        period_type (str): Type de période (ex. "Annuel", "Mensuel").
+    """
     theme_name = title.split(" - ")[0]
     metric_groups = get_metric_groups_and_labels(theme_name, period_type)
     store_period = title.split(" - ", 1)[1]
@@ -328,6 +356,18 @@ def plot_theme_metrics(data, metrics, title, period_type):
 
 
 def prepare_plot_data(data, metric, period_type, agg_func):
+    """
+    Prépare les données à tracer en fonction des agrégations et du type de période.
+
+    Args:
+        data (pd.DataFrame): Données à transformer.
+        metric (str): Nom de la métrique à préparer.
+        period_type (str): Type de période (ex. "Quotidien", "Mensuel").
+        agg_func (str): Fonction d'agrégation (ex. "sum", "mean").
+
+    Returns:
+        dict: Dictionnaire contenant les données pour les axes x et y.
+    """
     custom_metrics = ["conversion_rate", "avg_transaction_value"]
 
     if period_type == "Quotidien":
@@ -472,6 +512,15 @@ def prepare_plot_data(data, metric, period_type, agg_func):
 
 
 def get_themes(period_type):
+    """
+    Récupère les thèmes et leurs métriques associées en fonction du type de période.
+
+    Args:
+        period_type (str): Type de période (ex. "Quotidien", "Mensuel").
+
+    Returns:
+        dict: Thèmes et métriques correspondantes.
+    """
     if period_type == "Quotidien":
         return {
             "Performance des visiteurs": [
@@ -512,7 +561,14 @@ def get_themes(period_type):
 
 
 def display_kpi(title, value, variation=None):
-    """Affiche un KPI sous forme de rectangle stylisé avec alignement parfait."""
+    """
+    Affiche un indicateur clé de performance (KPI) avec style.
+
+    Args:
+        title (str): Titre du KPI.
+        value (str): Valeur du KPI.
+        variation (float, optional): Variation en pourcentage par rapport à une période précédente. Par défaut, None.
+    """
     if variation is not None:
         color = "green" if variation > 0 else "red"
         arrow = "▲" if variation > 0 else "▼"
@@ -544,7 +600,15 @@ def display_kpi(title, value, variation=None):
 
 
 def calculate_kpis(data):
-    """Calcule les KPI à afficher."""
+    """
+    Calcule les indicateurs clés de performance (KPI) pour un ensemble de données.
+
+    Args:
+        data (pd.DataFrame): Données filtrées pour calculer les KPI.
+
+    Returns:
+        dict: Dictionnaire contenant les valeurs des KPI.
+    """
     total_visitors = data["total_visitors"].sum()
     total_transactions = data["total_transactions"].sum()
     total_revenue = data["total_revenue"].sum()
@@ -569,7 +633,16 @@ def calculate_kpis(data):
 
 
 def calculate_variations(current_data, previous_data):
-    """Calcule la variation en pourcentage pour chaque KPI entre deux périodes."""
+    """
+    Calcule les variations en pourcentage pour les KPI entre deux périodes.
+
+    Args:
+        current_data (pd.DataFrame): Données actuelles.
+        previous_data (pd.DataFrame): Données de la période précédente.
+
+    Returns:
+        dict: Dictionnaire contenant les variations en pourcentage pour chaque KPI.
+    """
     variations = {}
 
     # Vérifiez que les données ne sont pas vides pour éviter les erreurs
@@ -655,6 +728,10 @@ def calculate_variations(current_data, previous_data):
 
 
 def main():
+    """
+    Fonction principale pour afficher l'interface utilisateur de visualisation
+    des métriques de performance des magasins avec Streamlit.
+    """
     st.title("Visualisation des métriques des magasins")
 
     tabs = st.tabs(["KPI Généraux", "Graphiques Détaillés"])

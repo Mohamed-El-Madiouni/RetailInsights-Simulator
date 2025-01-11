@@ -19,7 +19,16 @@ class StoreResponse(BaseModel):
 
 # Charger les données des magasins depuis le fichier JSON
 def load_stores():
-    """Charge les magasins depuis le fichier JSON 'stores.json'."""
+    """
+    Charge les magasins depuis le fichier JSON 'stores.json'.
+
+    Returns:
+        list: Liste des magasins chargés depuis le fichier.
+        []: Si le fichier n'existe pas ou est vide.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'stores.json' est introuvable.
+    """
     try:
         with open("data_api/stores.json", "r", encoding="utf-8") as f:
             stores = json.load(f)
@@ -33,8 +42,12 @@ def load_stores():
 async def get_stores():
     """
     Route GET pour récupérer la liste des magasins depuis le fichier 'stores.json'.
+
+    Returns:
+        List[StoreResponse]: Liste des magasins si le fichier est chargé avec succès.
+        dict: Message d'erreur si le fichier 'stores.json' est introuvable.
     """
-    # Charger les données des magasins
+    # Charger les données des magasins et gérer les cas où le fichier est introuvable
     try:
         stores = load_stores()
     except FileNotFoundError:

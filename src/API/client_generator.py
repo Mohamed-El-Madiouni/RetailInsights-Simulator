@@ -8,6 +8,12 @@ from faker import Faker
 
 class ClientGenerator:
     def __init__(self, data_dir="data_api"):
+        """
+        Initialise la classe ClientGenerator.
+
+        Args:
+            data_dir (str): Répertoire où les fichiers JSON seront sauvegardés.
+        """
         self.data_dir = data_dir
         self.fake = Faker()
         self.clients = []
@@ -21,12 +27,15 @@ class ClientGenerator:
 
     def generate_clients(self, num_clients=20000):
         """
-        Génère une liste de clients avec des informations aléatoires et une carte de fidélité.
+        Génère une liste de clients avec des informations aléatoires.
+
+        Args:
+            num_clients (int): Nombre de clients à générer. Par défaut, 20 000.
         """
         for _ in range(num_clients):
             name = self.fake.name()
 
-            # Vérifier s'il y a une erreur de saisie
+            # Simuler une erreur rare : générer un âge non réaliste (entre 200 et 1000)
             if random.random() < 0.0002:  # 0.02% de chance d'erreur
                 # Cas d'erreur : âge entre 200 et 1000
                 age = random.randint(200, 1000)
@@ -55,8 +64,16 @@ class ClientGenerator:
             )
 
     def save_clients(self, filename="clients.json"):
-        """Sauvegarde les clients dans un fichier JSON dans le dossier spécifié."""
-        # Vérifie si le dossier spécifié existe, sinon le crée
+        """
+        Sauvegarde la liste des clients dans un fichier JSON.
+
+        Args:
+            filename (str): Nom du fichier dans lequel sauvegarder les clients. Par défaut, 'clients.json'.
+
+        Raises:
+            AssertionError: Si l'objet de fichier n'est pas une instance de TextIOWrapper.
+        """
+        # Crée le répertoire spécifié s'il n'existe pas
         os.makedirs(self.data_dir, exist_ok=True)
 
         # Définir le chemin du fichier dans le dossier spécifié
@@ -68,10 +85,16 @@ class ClientGenerator:
             json.dump(self.clients, f, ensure_ascii=False, indent=4)
 
     def get_clients(self):
+        """
+        Retourne la liste des clients générés.
+
+        Returns:
+            list: Liste des clients.
+        """
         return self.clients
 
 
-# Exemple d'utilisation
+# Exemple d'utilisation de la classe ClientGenerator pour générer et sauvegarder des clients.
 if __name__ == "__main__":
     client_generator = ClientGenerator()
     client_generator.generate_clients()

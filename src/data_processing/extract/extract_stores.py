@@ -6,7 +6,10 @@ S3_FOLDER = "extracted_data"
 
 def fetch_and_save_stores():
     """
-    Récupère et sauvegarde les données des magasins sur S3.
+    Récupère les données des magasins depuis l'API et les sauvegarde sur S3.
+
+    Raises:
+        ValueError: Si aucune donnée n'est récupérée depuis l'API.
     """
     url = "http://127.0.0.1:8000/stores"
     data = fetch_from_api(url)  # Récupère les données depuis l'API
@@ -18,5 +21,6 @@ def fetch_and_save_stores():
         print("Aucune donnée récupérée depuis l'API magasins.")
 
 
+# Point d'entrée pour exécuter la récupération et la sauvegarde des données des magasins.
 if __name__ == "__main__":
     fetch_and_save_stores()

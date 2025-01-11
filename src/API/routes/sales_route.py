@@ -22,7 +22,16 @@ class SaleResponse(BaseModel):
 
 # Charger les données des ventes depuis le fichier JSON
 def load_sales():
-    """Charge les ventes depuis le fichier JSON 'sales.json'."""
+    """
+    Charge les ventes depuis le fichier JSON 'sales.json'.
+
+    Returns:
+        list: Liste des ventes chargées depuis le fichier.
+        []: Si le fichier n'existe pas ou est vide.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'sales.json' est introuvable.
+    """
     try:
         with open("data_api/sales.json", "r", encoding="utf-8") as f:
             sales = json.load(f)
@@ -35,8 +44,15 @@ def load_sales():
 @router.get("", response_model=List[SaleResponse])
 async def get_sales(sale_date: str, store_id: str):
     """
-    Route GET pour récupérer la liste des ventes dans un magasin à une date donnée.
-    Les arguments 'sale_date' et 'store_id' sont requis pour filtrer les ventes.
+    Route GET pour récupérer les ventes d'un magasin à une date donnée.
+
+    Args:
+        sale_date (str): La date des ventes, au format 'YYYY-MM-DD'.
+        store_id (str): L'identifiant du magasin.
+
+    Returns:
+        List[SaleResponse]: Liste des ventes filtrées pour la date et le magasin donnés.
+        dict: Message d'erreur si aucune vente n'est trouvée ou si le fichier est introuvable.
     """
     # Charger les données des ventes
     try:
@@ -44,7 +60,7 @@ async def get_sales(sale_date: str, store_id: str):
     except FileNotFoundError:
         return {"erreur": "Le fichier sales n'existe pas."}
 
-    # Filtrer les ventes en fonction de la date et du store_id
+    # Filtrer les ventes pour inclure uniquement celles correspondant aux critères spécifiés
     filtered_sales = [
         sale
         for sale in sales
@@ -62,8 +78,15 @@ async def get_sales(sale_date: str, store_id: str):
 @router.get("/hour", response_model=List[SaleResponse])
 async def get_sales_by_hour(sale_date: str, hour: str):
     """
-    Route GET pour récupérer la liste des ventes d'une date et une heure donnée.
-    Les arguments 'sale_date' et 'hour' sont requis pour filtrer les ventes.
+    Route GET pour récupérer les ventes à une date et une heure donnée.
+
+    Args:
+        sale_date (str): La date des ventes, au format 'YYYY-MM-DD'.
+        hour (str): L'heure des ventes, au format 'HH'.
+
+    Returns:
+        List[SaleResponse]: Liste des ventes pour la date et l'heure spécifiées.
+        dict: Message d'erreur si aucune vente n'est trouvée ou si le fichier est introuvable.
     """
     # Charger les données des ventes
     try:
@@ -71,7 +94,7 @@ async def get_sales_by_hour(sale_date: str, hour: str):
     except FileNotFoundError:
         return {"erreur": "Le fichier sales n'existe pas."}
 
-    # Filtrer les ventes en fonction de la date et l'heure
+    # Filtrer les ventes pour inclure uniquement celles correspondant aux critères spécifiés
     filtered_sales = [
         sale
         for sale in sales

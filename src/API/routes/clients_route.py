@@ -20,7 +20,16 @@ class ClientResponse(BaseModel):
 
 # Charger les données des clients depuis le fichier JSON
 def load_clients():
-    """Charge les clients depuis le fichier JSON 'clients.json'."""
+    """
+    Charge les clients depuis le fichier JSON 'clients.json'.
+
+    Returns:
+        list: Liste des clients chargés depuis le fichier.
+        []: Si le fichier n'existe pas ou est vide.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'clients.json' est introuvable.
+    """
     try:
         with open("data_api/clients.json", "r", encoding="utf-8") as f:
             clients = json.load(f)
@@ -34,7 +43,12 @@ def load_clients():
 async def get_clients(city: str):
     """
     Route GET pour récupérer la liste des clients dans une ville donnée.
-    L'argument 'city' est requis pour filtrer les clients par ville.
+
+    Args:
+        city (str): Nom de la ville pour filtrer les clients.
+
+    Returns:
+        JSONResponse: Liste des clients correspondant à la ville, ou un message d'erreur si aucun client n'est trouvé.
     """
     # Charger les données des clients
     try:
@@ -45,7 +59,7 @@ async def get_clients(city: str):
             status_code=404,
         )
 
-    # Filtrer les clients par la ville
+    # Filtrer les clients pour inclure uniquement ceux de la ville spécifiée (insensible à la casse)
     filtered_clients = [
         client for client in clients if client["city"].lower() == city.lower()
     ]

@@ -15,7 +15,13 @@ S3_FOLDER = "extracted_data/sales"
 
 def fetch_stores():
     """
-    Récupère la liste des magasins depuis le fichier stores.json.
+    Récupère la liste des magasins à partir du fichier 'stores.json'.
+
+    Returns:
+        list: Liste des identifiants des magasins.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'stores.json' n'existe pas.
     """
     stores = []
     file_name = os.path.join("data_api", "stores.json")
@@ -34,7 +40,13 @@ def fetch_stores():
 
 def fetch_and_save_sales(date):
     """
-    Récupère et sauvegarde les données de ventes sur S3.
+    Récupère les données de ventes pour une date donnée et les sauvegarde sur S3.
+
+    Args:
+        date (str): La date pour laquelle récupérer les données, au format 'YYYY-MM-DD'.
+
+    Raises:
+        Exception: Si une erreur inattendue survient lors de la lecture ou de l'écriture sur S3.
     """
     stores = fetch_stores()
     all_sales = []
@@ -78,6 +90,8 @@ def fetch_and_save_sales(date):
         print(f"Aucune donnée de ventes récupérée pour la date {date}.")
 
 
+# Point d'entrée pour exécuter la récupération et la sauvegarde des données de ventes.
+# L'utilisateur doit fournir une date en argument (format : 'YYYY-MM-DD').
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Vous devez renseigner une date en argument (format : YYYY-MM-DD)")

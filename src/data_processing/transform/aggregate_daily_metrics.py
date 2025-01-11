@@ -23,7 +23,13 @@ BUCKET_NAME = "retail-insights-bucket"
 
 def get_processed_dates(s3_key):
     """
-    Récupérer les dates déjà présentes dans le fichier traffic_metrics.parquet.
+    Récupère les dates déjà présentes dans le fichier `traffic_metrics.parquet` sur S3.
+
+    Args:
+        s3_key (str): Chemin du fichier Parquet dans le bucket S3.
+
+    Returns:
+        set: Ensemble des dates traitées déjà présentes dans le fichier.
     """
     try:
         response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
@@ -37,7 +43,14 @@ def get_processed_dates(s3_key):
 
 def get_historical_data(start_date, store_ids):
     """
-    Récupère les données historiques pour le calcul des moyennes glissantes.
+    Récupère les données historiques depuis le fichier `traffic_metrics.parquet` pour calculer les moyennes glissantes.
+
+    Args:
+        start_date (datetime): Date de début pour filtrer les données historiques.
+        store_ids (list): Liste des identifiants de magasins.
+
+    Returns:
+        pd.DataFrame: Données historiques filtrées.
     """
     try:
         response = s3.get_object(
@@ -60,10 +73,13 @@ def get_historical_data(start_date, store_ids):
 
 def read_parquet_from_s3(s3_folder):
     """
-    Lit et concatène tous les fichiers Parquet dans un dossier S3.
+    Lit et concatène tous les fichiers Parquet présents dans un dossier S3.
 
-    :param s3_folder: Chemin du dossier dans le bucket S3.
-    :return: DataFrame Pandas contenant les données concaténées.
+    Args:
+        s3_folder (str): Chemin du dossier dans le bucket S3.
+
+    Returns:
+        pd.DataFrame: Données concaténées depuis les fichiers Parquet.
     """
     response = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=s3_folder)
 
@@ -84,7 +100,14 @@ def read_parquet_from_s3(s3_folder):
 
 def read_parquet_from_s3_filtered(s3_folder, processed_dates):
     """
-    Lit et concatène tous les fichiers Parquet non traités dans un dossier S3.
+    Lit et concatène uniquement les fichiers Parquet non traités dans un dossier S3.
+
+    Args:
+        s3_folder (str): Chemin du dossier dans le bucket S3.
+        processed_dates (set): Ensemble des dates déjà traitées.
+
+    Returns:
+        pd.DataFrame: Données des fichiers non traités.
     """
     response = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=s3_folder)
     if "Contents" not in response:
@@ -109,7 +132,15 @@ def read_parquet_from_s3_filtered(s3_folder, processed_dates):
 
 
 def calculate_store_ratio(group):
-    """Version optimisée du calcul de ratio"""
+    """
+    Calcule le ratio ventes/visiteurs pour un groupe de données et ajuste les valeurs aberrantes.
+
+    Args:
+        group (pd.DataFrame): Données groupées par magasin.
+
+    Returns:
+        pd.DataFrame: Groupe ajusté avec les ratios recalculés.
+    """
     valid_mask = (group["visitors"] <= 5000) & (group["visitors"] > 0)
     if valid_mask.any():
         ratio_mean = (
@@ -125,7 +156,15 @@ def calculate_store_ratio(group):
 
 
 def aggregate_retail_data(retail_data):
-    """Version optimisée de l'agrégation des données retail"""
+    """
+    Agrège les données retail par date et magasin, incluant les heures de pointe.
+
+    Args:
+        retail_data (pd.DataFrame): Données retail.
+
+    Returns:
+        pd.DataFrame: Données agrégées avec les sommations et heures de pointe.
+    """
     # Calculer les sommes
     aggs = {"visitors": "sum", "sales": "sum"}
     retail_agg = retail_data.groupby(["date", "store_id"]).agg(aggs)
@@ -163,7 +202,16 @@ def aggregate_retail_data(retail_data):
 
 
 def calculate_moving_averages(metrics_df, historical_data=None):
-    """Version optimisée du calcul des moyennes glissantes"""
+    """
+    Calcule les moyennes glissantes des métriques sur 4 semaines.
+
+    Args:
+        metrics_df (pd.DataFrame): Données métriques quotidiennes.
+        historical_data (pd.DataFrame, optional): Données historiques. Par défaut, None.
+
+    Returns:
+        pd.DataFrame: Données avec les moyennes glissantes calculées.
+    """
     if not historical_data.empty:
         combined_data = pd.concat([historical_data, metrics_df]).sort_values(["date"])
     else:
@@ -199,7 +247,15 @@ def calculate_moving_averages(metrics_df, historical_data=None):
 
 
 def process_best_selling(sales_with_cost):
-    """Version optimisée du calcul des meilleurs vendeurs"""
+    """
+    Identifie les produits les plus vendus par magasin et par date.
+
+    Args:
+        sales_with_cost (pd.DataFrame): Données de ventes incluant les coûts des produits.
+
+    Returns:
+        pd.DataFrame: Meilleurs produits par date et magasin.
+    """
     # Calcul des quantités totales
     quantities = (
         sales_with_cost.groupby(["sale_date", "store_id", "product_id", "name"])[
@@ -227,7 +283,15 @@ def process_best_selling(sales_with_cost):
 
 
 def calculate_final_metrics(df):
-    """Version optimisée du calcul des métriques finales"""
+    """
+    Calcule les métriques finales pour les magasins, incluant les taux de conversion et les variations.
+
+    Args:
+        df (pd.DataFrame): Données avec les métriques de base.
+
+    Returns:
+        pd.DataFrame: Données avec les métriques finales calculées.
+    """
     metrics = df.copy()
 
     # Ajouter des colonnes moyennes glissantes manquantes avec des valeurs par défaut
@@ -309,7 +373,12 @@ def calculate_final_metrics(df):
 
 def append_to_existing_metrics(new_metrics, s3_key, is_test=False):
     """
-    Ajouter les nouvelles métriques au fichier existant sur S3.
+    Ajoute les nouvelles métriques aux données existantes sur S3.
+
+    Args:
+        new_metrics (pd.DataFrame): Nouvelles métriques à ajouter.
+        s3_key (str): Chemin du fichier sur S3.
+        is_test (bool, optional): Si True, simule une sauvegarde pour les tests. Par défaut, False.
     """
     try:
         if is_test:
@@ -360,8 +429,9 @@ def append_to_existing_metrics(new_metrics, s3_key, is_test=False):
 
 
 def calculate_daily_metrics():
-    """Fonction principale optimisée"""
-
+    """
+    Fonction principale pour traiter les données quotidiennes, calculer les métriques, et les sauvegarder.
+    """
     processed_dates = get_processed_dates("processed_data/traffic_metrics.parquet")
     print(f"Dates déjà traitées récupérées: {processed_dates}")
 

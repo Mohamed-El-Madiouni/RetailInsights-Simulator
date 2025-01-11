@@ -12,12 +12,17 @@ from src.data_processing.extract.utils import save_to_s3
 # Mock pour save_to_s3
 @pytest.fixture
 def mock_save_to_s3():
+    """Fixture pour mocker save_to_s3."""
     with patch("src.data_processing.extract.extract_clients.save_to_s3") as mock:
         yield mock
 
 
 # Test de l'extraction et sauvegarde des clients
 def test_fetch_and_save_clients(mock_save_to_s3):
+    """
+    Teste la fonction fetch_and_save_clients pour s'assurer que les données
+    des clients sont correctement extraites et sauvegardées sur S3.
+    """
     # Mock des villes retournées par fetch_cities
     with patch(
         "src.data_processing.extract.extract_clients.fetch_cities",
@@ -53,6 +58,10 @@ def test_fetch_and_save_clients(mock_save_to_s3):
 
 # Test en cas d'erreur avec l'API
 def test_fetch_and_save_clients_api_error():
+    """
+    Teste la gestion des erreurs de l'API dans la fonction fetch_and_save_clients.
+    Vérifie que save_to_s3 n'est pas appelé en cas d'erreur API.
+    """
     with patch(
         "src.data_processing.extract.extract_clients.fetch_from_api",
         side_effect=Exception("API Error"),

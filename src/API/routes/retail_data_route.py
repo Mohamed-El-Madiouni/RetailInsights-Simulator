@@ -21,7 +21,16 @@ class RetailDataResponse(BaseModel):
 
 # Charger les données des visiteurs depuis le fichier JSON retail_data
 def load_retail_data():
-    """Charge les données de retail depuis le fichier JSON 'retail_data.json'."""
+    """
+    Charge les données de retail depuis le fichier JSON 'retail_data.json'.
+
+    Returns:
+        list: Liste des données retail chargées depuis le fichier.
+        []: Si le fichier est introuvable ou vide.
+
+    Raises:
+        FileNotFoundError: Si le fichier 'retail_data.json' est introuvable.
+    """
     try:
         with open("data_api/retail_data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -34,9 +43,14 @@ def load_retail_data():
 @router.get("", response_model=List[RetailDataResponse])
 async def get_visitors(date: str):
     """
-    Route GET pour récupérer le nombre total de visiteurs pour un magasin
-    à une date donnée.
-    La date doit être au format 'YYYY-MM-DD'.
+    Route GET pour récupérer les données retail d'une date spécifique.
+
+    Args:
+        date (str): La date pour laquelle récupérer les données, au format 'YYYY-MM-DD'.
+
+    Returns:
+        List[RetailDataResponse]: Liste des données retail pour la date donnée.
+        JSONResponse: Erreur si la date est invalide ou si les données ne sont pas disponibles.
     """
     # Vérifier si la date est valide
     try:
@@ -55,7 +69,7 @@ async def get_visitors(date: str):
             status_code=404,
         )
 
-    # Filtrer les données pour la date donnée
+    # Filtrer les données pour inclure uniquement celles correspondant à la date
     response = [
         RetailDataResponse(
             store_id=entry["store_id"],
@@ -75,9 +89,15 @@ async def get_visitors(date: str):
 @router.get("/store", response_model=List[RetailDataResponse])
 async def get_store_visitors(date: str, store_id: str):
     """
-    Route GET pour récupérer le nombre total de visiteurs pour un magasin
-    à une date donnée.
-    La date doit être au format 'YYYY-MM-DD'.
+    Route GET pour récupérer les données retail d'un magasin spécifique à une date donnée.
+
+    Args:
+        date (str): La date pour laquelle récupérer les données, au format 'YYYY-MM-DD'.
+        store_id (str): L'identifiant du magasin.
+
+    Returns:
+        List[RetailDataResponse]: Liste des données retail pour le magasin et la date donnés.
+        JSONResponse: Erreur si la date est invalide ou si les données ne sont pas disponibles.
     """
     # Vérifier si la date est valide
     try:
@@ -92,7 +112,7 @@ async def get_store_visitors(date: str, store_id: str):
         print("Le fichier des données de retail n'existe pas.")
         return {"error": "Retail data file not found."}
 
-    # Filtrer les données pour la date donnée
+    # Filtrer les données pour inclure uniquement celles correspondant à la date et au store_id
     response = [
         RetailDataResponse(
             store_id=entry["store_id"],
