@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel
 import json
 from datetime import datetime
+from fastapi.responses import JSONResponse
 
 
 router = APIRouter()
@@ -41,14 +42,18 @@ async def get_visitors(date: str):
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
-        return {"error": "Date format is incorrect. Use 'YYYY-MM-DD'."}
-
+        return JSONResponse(
+            content={"error": "Date format is incorrect. Use 'YYYY-MM-DD'."},
+            status_code=400,  # Code de statut HTTP 400 (mauvaise requête)
+        )
     # Charger les données de retail
     try:
         retail_data = load_retail_data()  # Cette fonction charge les données du fichier
     except FileNotFoundError:
-        print("Le fichier des données de retail n'existe pas.")
-        return {"error": "Retail data file not found."}
+        return JSONResponse(
+            content={"error": "Retail data file not found."},
+            status_code=404,
+        )
 
     # Filtrer les données pour la date donnée
     response = [

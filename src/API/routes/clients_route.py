@@ -1,7 +1,9 @@
 from fastapi import APIRouter
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel
 import json
+from fastapi.responses import JSONResponse
+
 
 router = APIRouter()
 
@@ -38,7 +40,10 @@ async def get_clients(city: str):
     try:
         clients = load_clients()
     except FileNotFoundError:
-        return {"error": "Clients data file not found."}
+        return JSONResponse(
+            content={"error": "Clients data file not found."},
+            status_code=404,
+        )
 
     # Filtrer les clients par la ville
     filtered_clients = [
@@ -47,7 +52,10 @@ async def get_clients(city: str):
 
     # Si aucun client n'est trouvé pour la ville spécifiée
     if not filtered_clients:
-        return {"error": f"No clients found in city: {city}"}
+        return JSONResponse(
+            content={"error": f"No clients found in city: {city}"},
+            status_code=404,  # Changer ici le code de statut si nécessaire
+        )
 
     # Retourner la liste des clients filtrés
     return filtered_clients
