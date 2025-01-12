@@ -1,12 +1,18 @@
+import io
+import os
+import tempfile
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
 from src.API.main import app
 from src.data_processing.extract.extract_clients import fetch_and_save_clients
-from src.data_processing.extract.utils import save_to_s3
+from src.data_processing.extract.utils import (create_output_folder,
+                                               read_parquet_from_s3,
+                                               save_to_s3, save_with_pandas)
 
 
 # Mock pour save_to_s3
@@ -75,3 +81,88 @@ def test_fetch_and_save_clients_api_error():
 
         # Vérifier que save_to_s3 n'est pas appelé
         mock_save.assert_not_called()
+
+
+def test_create_output_folder():
+    """
+    Teste que la fonction `create_output_folder` crée correctement un dossier
+    à l'emplacement spécifié et retourne son chemin.
+    """
+    # Créer un dossier temporaire
+    with tempfile.TemporaryDirectory() as temp_dir:
+        folder_path = os.path.join(temp_dir, "test_folder")
+
+        # Appeler la fonction
+        result = create_output_folder(folder_path)
+
+        # Vérifier que le dossier a été créé
+        assert os.path.exists(result)
+        assert result == folder_path
+
+
+def test_save_with_pandas():
+    """
+    Teste que la fonction `save_with_pandas` sauvegarde des données au format Parquet
+    dans un fichier et que le fichier peut être relu avec les données intactes.
+    """
+    # Données simulées
+    data = [{"col1": 1, "col2": 2}, {"col1": 3, "col2": 4}]
+
+    # Utiliser un fichier temporaire
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".parquet") as temp_file:
+        temp_file_path = temp_file.name
+
+    try:
+        # Appeler la fonction
+        save_with_pandas(data, temp_file_path)
+
+        # Vérifier que le fichier a été créé et peut être lu
+        df = pd.read_parquet(temp_file_path)
+        assert not df.empty
+        assert list(df.columns) == ["col1", "col2"]
+    finally:
+        # Nettoyer le fichier temporaire
+        os.remove(temp_file_path)
+
+
+@patch("src.data_processing.extract.utils.s3")
+def test_save_to_s3(mock_s3):
+    """
+    Teste que la fonction `save_to_s3` envoie correctement un fichier contenant des
+    données au format Parquet vers un emplacement S3 donné.
+    """
+    # Données simulées
+    data = [{"col1": 1, "col2": 2}, {"col1": 3, "col2": 4}]
+    s3_key = "test_data/test_file.parquet"
+
+    # Mock S3 client
+    mock_s3.upload_file.return_value = None
+
+    # Appeler la fonction
+    save_to_s3(data, s3_key)
+
+    # Vérifier que le fichier a été envoyé sur S3
+    mock_s3.upload_file.assert_called_once()
+
+
+@patch("src.data_processing.extract.utils.s3")
+def test_read_parquet_from_s3(mock_s3):
+    """
+    Teste que la fonction `read_parquet_from_s3` lit correctement un fichier Parquet
+    depuis S3 et retourne les données sous forme de DataFrame Pandas.
+    """
+    # Données simulées
+    test_data = pd.DataFrame({"col1": [1, 3], "col2": [2, 4]})
+    buffer = io.BytesIO()
+    test_data.to_parquet(buffer, engine="pyarrow")
+    buffer.seek(0)
+
+    # Mock de la réponse S3
+    mock_s3.get_object.return_value = {"Body": buffer}
+
+    # Appeler la fonction
+    result = read_parquet_from_s3("test_data/test_file.parquet")
+
+    # Vérifier les données
+    pd.testing.assert_frame_equal(result, test_data)
+    mock_s3.get_object.assert_called_once()

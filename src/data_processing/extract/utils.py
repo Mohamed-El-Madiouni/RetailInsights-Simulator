@@ -5,7 +5,6 @@ import tempfile
 import boto3
 import pandas as pd
 from dotenv import load_dotenv
-from pyspark.sql import SparkSession
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -52,28 +51,6 @@ def save_with_pandas(data, output_file):
     df = pd.DataFrame(data)
     df.to_parquet(output_file, engine="pyarrow", compression="snappy")
     print(f"Fichier sauvegardé avec Pandas : {output_file}")
-
-
-# Sauvegarder les données en Parquet avec Spark
-def save_with_spark(data, output_file):
-    """
-    Sauvegarde les données au format Parquet en utilisant Apache Spark.
-
-    Args:
-        data (list | dict): Données à sauvegarder.
-        output_file (str): Chemin du fichier de sortie.
-    """
-    spark = (
-        SparkSession.builder.appName("API Data to Parquet")
-        .master("local[*]")
-        .getOrCreate()
-    )
-
-    df = spark.read.json(spark.sparkContext.parallelize([data]))
-    df.write.parquet(output_file, mode="overwrite", compression="snappy")
-    print(f"Fichier sauvegardé avec Spark : {output_file}")
-
-    spark.stop()
 
 
 # Récupérer des données depuis une API

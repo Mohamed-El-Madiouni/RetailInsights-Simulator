@@ -3,6 +3,7 @@ Fichier principal pour configurer et démarrer l'API Retail Insights.
 
 Ce fichier inclut les routeurs définis dans différents modules et lance le serveur.
 """
+
 from fastapi import FastAPI
 
 from src.API.routes.clients_route import router as client_router

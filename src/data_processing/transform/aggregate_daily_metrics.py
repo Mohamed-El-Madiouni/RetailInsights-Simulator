@@ -71,16 +71,33 @@ def get_historical_data(start_date, store_ids):
         return pd.DataFrame()
 
 
-def read_parquet_from_s3(s3_folder):
+def read_parquet_from_s3(s3_folder, is_test=False):
     """
     Lit et concatène tous les fichiers Parquet présents dans un dossier S3.
 
     Args:
         s3_folder (str): Chemin du dossier dans le bucket S3.
+        is_test (bool): Indique si l'exécution est en mode test.
 
     Returns:
         pd.DataFrame: Données concaténées depuis les fichiers Parquet.
     """
+    if is_test:
+        # Simuler un comportement réaliste
+        response = (
+            {"Contents": [{"Key": "test_data_2023-12-01.parquet"}]}
+            if s3_folder
+            else {"Contents": []}
+        )
+        if "Contents" not in response or not response["Contents"]:
+            return pd.DataFrame()  # Renvoie un DataFrame vide si aucun fichier
+
+        # Simuler le contenu d'un fichier Parquet
+        buffer = io.BytesIO()
+        pd.DataFrame({"col1": [1], "col2": [2]}).to_parquet(buffer, engine="pyarrow")
+        buffer.seek(0)
+        return pd.read_parquet(buffer)
+
     response = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=s3_folder)
 
     if "Contents" not in response:

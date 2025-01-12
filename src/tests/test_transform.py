@@ -6,9 +6,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from src.data_processing.transform.aggregate_daily_metrics import (
-    aggregate_retail_data, append_to_existing_metrics, calculate_final_metrics,
-    calculate_moving_averages, calculate_store_ratio, process_best_selling,
-    read_parquet_from_s3_filtered)
+    aggregate_retail_data, append_to_existing_metrics, calculate_daily_metrics,
+    calculate_final_metrics, calculate_moving_averages, calculate_store_ratio,
+    get_historical_data, get_processed_dates, process_best_selling,
+    read_parquet_from_s3, read_parquet_from_s3_filtered)
 
 
 def test_calculate_final_metrics():
@@ -263,3 +264,155 @@ def test_read_parquet_from_s3_filtered():
         assert not result.empty  # Doit contenir les données du fichier valide
         assert len(result) == 1
         assert result.iloc[0]["date"] == "2023-12-02"
+
+
+def test_get_processed_dates():
+    """
+    Teste la récupération des dates déjà traitées à partir d'un fichier Parquet sur S3.
+    Vérifie le comportement pour un fichier existant et un fichier manquant.
+    """
+    # Mock des données existantes
+    existing_data = pd.DataFrame({"date": ["2023-12-01", "2023-12-02"]})
+    buffer = io.BytesIO()
+    existing_data.to_parquet(buffer, engine="pyarrow")
+    buffer.seek(0)
+
+    # Mock S3 client
+    mock_s3 = MagicMock()
+    mock_s3.get_object.return_value = {"Body": io.BytesIO(buffer.getvalue())}
+
+    # Définir une exception custom pour `NoSuchKey`
+    class NoSuchKey(Exception):
+        pass
+
+    mock_s3.exceptions = MagicMock(NoSuchKey=NoSuchKey)
+
+    with patch("src.data_processing.transform.aggregate_daily_metrics.s3", mock_s3):
+        # Cas avec un fichier existant
+        result = get_processed_dates("processed_data/traffic_metrics.parquet")
+        assert result == {"2023-12-01", "2023-12-02"}
+
+        # Cas avec un fichier inexistant
+        mock_s3.get_object.side_effect = NoSuchKey
+        result = get_processed_dates("processed_data/traffic_metrics.parquet")
+        assert result == set()
+
+
+def test_get_historical_data():
+    """
+    Teste la récupération des données historiques sur S3 pour une période donnée.
+    Vérifie que seules les dates dans les 4 dernières semaines sont incluses.
+    Vérifie également le comportement lorsqu'aucune donnée n'est disponible.
+    """
+    # Mock S3 client
+    mock_s3 = MagicMock()
+
+    # Configurer la réponse S3 avec des données conformes au filtre
+    historical_data = pd.DataFrame(
+        {
+            "date": ["2023-11-03", "2023-11-15", "2023-12-01"],  # Dates dans la plage
+            "store_id": ["store_1", "store_1", "store_1"],
+            "total_visitors": [100, 200, 300],
+        }
+    )
+    buffer = io.BytesIO()
+    historical_data.to_parquet(buffer, engine="pyarrow")
+    buffer.seek(0)
+
+    mock_s3.get_object.return_value = {"Body": io.BytesIO(buffer.getvalue())}
+
+    # Patcher `s3` utilisé dans la fonction
+    with patch("src.data_processing.transform.aggregate_daily_metrics.s3", mock_s3):
+        # Cas avec des données valides
+        result = get_historical_data(pd.Timestamp("2023-12-01"), ["store_1"])
+        assert not result.empty
+        assert len(result) == 2  # Seulement 2 dates dans les 4 dernières semaines
+
+        # Convertir les dates en chaînes avant la comparaison
+        result_dates = set(result["date"].dt.strftime("%Y-%m-%d"))
+        assert result_dates == {"2023-11-03", "2023-11-15"}
+
+        # Cas sans données
+        mock_s3.get_object.side_effect = Exception
+        result = get_historical_data(pd.Timestamp("2023-12-01"), ["store_1"])
+        assert result.empty
+
+
+def test_read_parquet_from_s3():
+    """
+    Teste la lecture et la concaténation des fichiers Parquet dans un dossier S3.
+    Vérifie le comportement avec des fichiers disponibles et avec un dossier vide.
+    """
+    # Mock S3 client
+    mock_s3 = MagicMock()
+
+    # Configurer la réponse S3 pour le mode test
+    mock_s3.list_objects_v2.return_value = {
+        "Contents": [{"Key": "test_data_2023-12-01.parquet"}]
+    }
+    buffer = io.BytesIO()
+    pd.DataFrame({"col1": [1], "col2": [2]}).to_parquet(buffer, engine="pyarrow")
+    buffer.seek(0)
+    mock_s3.get_object.return_value = {"Body": buffer}
+
+    # Patcher `s3` utilisé dans la fonction
+    with patch("src.data_processing.transform.aggregate_daily_metrics.s3", mock_s3):
+        # Appeler la fonction en mode test avec des fichiers présents
+        result = read_parquet_from_s3("processed_data/", is_test=True)
+        assert not result.empty
+        assert len(result) == 1
+
+        # Appeler la fonction en mode test avec aucun fichier
+        result = read_parquet_from_s3("", is_test=True)
+        assert result.empty
+
+
+def test_calculate_daily_metrics():
+    """
+    Teste la fonction principale de calcul des métriques journalières.
+    Mocke les dépendances internes pour vérifier que les données sont lues, fusionnées,
+    et sauvegardées correctement.
+    """
+    # Mock des fonctions internes
+    with patch(
+        "src.data_processing.transform.aggregate_daily_metrics.get_processed_dates",
+        return_value={"2023-12-01"},
+    ), patch(
+        "src.data_processing.transform.aggregate_daily_metrics.read_parquet_from_s3_filtered"
+    ) as mock_read_filtered, patch(
+        "src.data_processing.transform.aggregate_daily_metrics.read_parquet_from_s3"
+    ) as mock_read, patch(
+        "src.data_processing.transform.aggregate_daily_metrics.append_to_existing_metrics"
+    ) as mock_append:
+
+        # Mock des données retournées
+        mock_read_filtered.side_effect = [
+            pd.DataFrame(
+                {
+                    "date": ["2023-12-01"],
+                    "store_id": ["store_1"],
+                    "visitors": [100],
+                    "sales": [50],
+                    "hour": [14],  # Ajout de la colonne `hour`
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "sale_date": ["2023-12-01"],
+                    "store_id": ["store_1"],
+                    "quantity": [10],
+                    "sale_amount": [500],
+                    "product_id": ["product_1"],
+                }
+            ),
+        ]  # Simuler les retail_data et sales_data
+
+        mock_read.return_value = pd.DataFrame(
+            {"id": ["product_1"], "cost": [10], "name": ["Product A"]}
+        )
+
+        # Appeler la fonction principale
+        calculate_daily_metrics()
+
+        # Vérifier que les données sont correctement fusionnées et sauvegardées
+        mock_append.assert_called_once()

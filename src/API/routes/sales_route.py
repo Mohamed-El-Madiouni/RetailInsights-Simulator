@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Union
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 # Modèle Pydantic pour la réponse des ventes
-class SaleResponse(BaseModel):
+class SaleDataResponse(BaseModel):
     sale_id: str
     nb_type_product: int
     product_id: str
@@ -18,6 +18,13 @@ class SaleResponse(BaseModel):
     sale_amount: float
     sale_date: str
     sale_time: str
+
+
+class ErrorResponse(BaseModel):
+    error: str
+
+
+SaleResponse = Union[SaleDataResponse, ErrorResponse]
 
 
 # Charger les données des ventes depuis le fichier JSON
@@ -52,13 +59,12 @@ async def get_sales(sale_date: str, store_id: str):
 
     Returns:
         List[SaleResponse]: Liste des ventes filtrées pour la date et le magasin donnés.
-        dict: Message d'erreur si aucune vente n'est trouvée ou si le fichier est introuvable.
     """
     # Charger les données des ventes
     try:
         sales = load_sales()
     except FileNotFoundError:
-        return {"erreur": "Le fichier sales n'existe pas."}
+        return [{"error": "Le fichier sales n'existe pas."}]
 
     # Filtrer les ventes pour inclure uniquement celles correspondant aux critères spécifiés
     filtered_sales = [
@@ -69,7 +75,7 @@ async def get_sales(sale_date: str, store_id: str):
 
     # Si aucune vente n'est trouvée pour la date et le magasin spécifiés
     if not filtered_sales:
-        return {"error": f"No sales found for store ID: {store_id} on {sale_date}"}
+        return [{"error": f"No sales found for store ID: {store_id} on {sale_date}"}]
 
     # Retourner la liste des ventes filtrées
     return filtered_sales
@@ -86,13 +92,12 @@ async def get_sales_by_hour(sale_date: str, hour: str):
 
     Returns:
         List[SaleResponse]: Liste des ventes pour la date et l'heure spécifiées.
-        dict: Message d'erreur si aucune vente n'est trouvée ou si le fichier est introuvable.
     """
     # Charger les données des ventes
     try:
         sales = load_sales()
     except FileNotFoundError:
-        return {"erreur": "Le fichier sales n'existe pas."}
+        return [{"erreur": "Le fichier sales n'existe pas."}]
 
     # Filtrer les ventes pour inclure uniquement celles correspondant aux critères spécifiés
     filtered_sales = [
@@ -104,7 +109,7 @@ async def get_sales_by_hour(sale_date: str, hour: str):
 
     # Si aucune vente n'est trouvée pour la date et l'heure spécifiés
     if not filtered_sales:
-        return {"error": f"No sales found for hour: {hour} on {sale_date}"}
+        return [{"error": f"No sales found for hour: {hour} on {sale_date}"}]
 
     # Retourner la liste des ventes filtrées
     return filtered_sales

@@ -81,6 +81,7 @@ class SaleGenerator:
         hour (int): Heure de la journée pour laquelle générer les ventes.
         data_dir (str): Répertoire contenant les données JSON. Par défaut, 'data_api'.
     """
+
     def __init__(self, date_str, num_sales, store, hour, data_dir="data_api"):
         self.products = load_products(data_dir)
         self.clients = load_clients(data_dir)

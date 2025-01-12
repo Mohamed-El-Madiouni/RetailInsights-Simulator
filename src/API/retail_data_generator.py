@@ -148,6 +148,7 @@ class RetailDataGenerator:
     Args:
         data_dir (str): Répertoire où les fichiers JSON seront lus et sauvegardés.
     """
+
     def __init__(self, data_dir="data_api"):
         self.data_dir = data_dir
         self.stores = load_stores(

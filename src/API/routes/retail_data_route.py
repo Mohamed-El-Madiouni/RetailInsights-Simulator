@@ -10,13 +10,20 @@ router = APIRouter()
 
 
 # Modèle Pydantic pour la réponse des visiteurs
-class RetailDataResponse(BaseModel):
+class RetailResponse(BaseModel):
     store_id: str
     store_name: str
     date: str
     hour: int
     visitors: Optional[int]
     sales: Optional[int]
+
+
+class ErrorResponse(BaseModel):
+    error: str
+
+
+RetailDataResponse = Union[RetailResponse, ErrorResponse]
 
 
 # Charger les données des visiteurs depuis le fichier JSON retail_data
@@ -97,33 +104,36 @@ async def get_store_visitors(date: str, store_id: str):
 
     Returns:
         List[RetailDataResponse]: Liste des données retail pour le magasin et la date donnés.
-        JSONResponse: Erreur si la date est invalide ou si les données ne sont pas disponibles.
     """
     # Vérifier si la date est valide
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
-        return {"error": "Date format is incorrect. Use 'YYYY-MM-DD'."}
+        return [{"error": "Date format is incorrect. Use 'YYYY-MM-DD'."}]
 
     # Charger les données de retail
     try:
         retail_data = load_retail_data()  # Cette fonction charge les données du fichier
     except FileNotFoundError:
         print("Le fichier des données de retail n'existe pas.")
-        return {"error": "Retail data file not found."}
+        return [{"error": "Retail data file not found."}]
 
     # Filtrer les données pour inclure uniquement celles correspondant à la date et au store_id
-    response = [
-        RetailDataResponse(
-            store_id=entry["store_id"],
-            store_name=entry["store_name"],
-            date=entry["date"],
-            hour=entry["hour"],
-            visitors=entry["visitors"],
-            sales=entry["sales"],
-        )
+    filtered_data = [
+        {
+            "store_id": entry["store_id"],
+            "store_name": entry["store_name"],
+            "date": entry["date"],
+            "hour": entry["hour"],
+            "visitors": entry["visitors"],
+            "sales": entry["sales"],
+        }
         for entry in retail_data
         if entry["date"] == date and entry["store_id"] == store_id
     ]
 
-    return response
+    # Si aucune donnée n'est trouvée
+    if not filtered_data:
+        return [{"error": f"No retail data found for store ID: {store_id} on {date}."}]
+
+    return filtered_data
