@@ -51,7 +51,7 @@ def read_parquet_files_from_s3(folder_prefix):
         key = obj["Key"]
 
         # Vérifier si c'est un fichier Parquet directement sous extracted_data/
-        if key.endswith(".parquet") and "/" not in key[len(folder_prefix) :]:
+        if key.endswith(".parquet") and "/" not in key[len(folder_prefix):]:
             files_in_root.append(key)
         else:
             # Identifier le sous-dossier

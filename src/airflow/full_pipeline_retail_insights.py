@@ -86,7 +86,8 @@ with DAG(
         "python src/data_processing/extract/extract_retail_data.py",
     )
 
-    # Tâche 5 : Supprimer les fichiers temporaires pour libérer de l'espace et éviter les conflits lors de la prochaine exécution.
+    # Tâche 5 : Supprimer les fichiers temporaires pour libérer de l'espace et éviter les conflits
+    # lors de la prochaine exécution.
     cleanup_files = BashOperator(
         task_id="cleanup_files",
         bash_command="rm -rf ~/RetailInsights-Simulator/data_api/sales.json "

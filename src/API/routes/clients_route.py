@@ -1,5 +1,5 @@
 import json
-from typing import List, Union
+from typing import List
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse

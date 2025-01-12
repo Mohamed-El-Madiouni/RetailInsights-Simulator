@@ -5,10 +5,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-import pytest_asyncio
-from httpx import AsyncClient
 
-from src.API.main import app
 from src.data_processing.extract.extract_clients import fetch_and_save_clients
 from src.data_processing.extract.utils import (create_output_folder,
                                                read_parquet_from_s3,
@@ -78,6 +75,9 @@ def test_fetch_and_save_clients_api_error():
         # Appeler la fonction et capturer l'exception
         with pytest.raises(Exception, match="API Error"):
             fetch_and_save_clients(is_test=True)
+
+        # Vérifier que fetch_from_api a été appelé
+        mock_api.assert_called_once()
 
         # Vérifier que save_to_s3 n'est pas appelé
         mock_save.assert_not_called()

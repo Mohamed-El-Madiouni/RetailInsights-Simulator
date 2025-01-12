@@ -67,7 +67,7 @@ def get_historical_data(start_date, store_ids):
         historical_data = historical_data[mask]
 
         return historical_data
-    except:
+    except Exception:
         return pd.DataFrame()
 
 

@@ -401,7 +401,7 @@ def test_save_products(mock_exists, mock_makedirs):
 
 
 @patch("builtins.open", side_effect=FileNotFoundError)
-def test_load_stores_file_not_found(mock_open):
+def test_load_stores_file_not_found(_mock_open):
     """
     Teste que la fonction `load_stores` retourne une liste vide lorsque le fichier n'existe pas.
     """
@@ -518,12 +518,11 @@ def test_generate_data_day(
                 # Simuler un fichier en écriture basé sur BytesIO pour supporter bytes
                 mock_file = BytesIO()
                 return TextIOWrapper(mock_file, encoding=encoding)
-            elif "r" in mode:
+            if "r" in mode:
                 # Simuler un fichier vide en lecture basé sur BytesIO
                 mock_file = BytesIO(b"[]")
                 return TextIOWrapper(mock_file, encoding=encoding)
-            else:
-                raise ValueError("Unsupported mode in test")
+            raise ValueError("Unsupported mode in test")
 
         with patch("builtins.open", new=mock_open_wrapper):
             generator = RetailDataGenerator()
@@ -553,12 +552,11 @@ def test_save_retail_data_to_file_existing(mock_exists, mock_open):
             # Fichier JSON existant simulé
             mock_file = BytesIO(b"[]")
             return TextIOWrapper(mock_file, encoding="utf-8")
-        elif "w" in mode:
+        if "w" in mode:
             # Fichier en écriture simulé
             mock_file = BytesIO()
             return TextIOWrapper(mock_file, encoding="utf-8")
-        else:
-            raise ValueError("Unsupported mode")
+        raise ValueError("Unsupported mode")
 
     mock_open.side_effect = (
         mock_open_wrapper  # Utiliser le wrapper pour chaque appel d'`open`
@@ -577,7 +575,7 @@ def test_save_retail_data_to_file_existing(mock_exists, mock_open):
 
 
 @patch("builtins.open", side_effect=FileNotFoundError)
-def test_load_products_file_not_found(mock_open):
+def test_load_products_file_not_found(_mock_open):
     """
     Teste que la fonction `load_products` retourne une liste vide lorsque le fichier n'existe pas.
     """
@@ -586,7 +584,7 @@ def test_load_products_file_not_found(mock_open):
 
 
 @patch("builtins.open", side_effect=FileNotFoundError)
-def test_load_clients_file_not_found(mock_open):
+def test_load_clients_file_not_found(_mock_open):
     """
     Teste que la fonction `load_clients` retourne une liste vide lorsque le fichier n'existe pas.
     """
@@ -617,9 +615,9 @@ def test_find_client_for_store_no_client():
     assert result is None
 
 
-@patch("builtins.open")  # Mock explicite de `open`
+@patch("builtins.open", new_callable=mock_open)  # Mock explicite de `open`
 @patch("os.path.exists", return_value=True)  # Mock pour simuler que le fichier existe
-def test_save_sales_to_file_existing(mock_exists, mock_open):
+def test_save_sales_to_file_existing(_mock_exists, _mock_open):
     """
     Teste que la méthode `save_sales_to_file` sauvegarde correctement les données de vente
     dans un fichier JSON existant, en simulant les appels à `open`.
@@ -631,14 +629,13 @@ def test_save_sales_to_file_existing(mock_exists, mock_open):
             # Simuler un fichier JSON existant avec des données vides
             mock_file = BytesIO(b"[]")
             return TextIOWrapper(mock_file, encoding="utf-8")
-        elif "w" in mode:
+        if "w" in mode:
             # Simuler un fichier prêt à être écrit
             mock_file = BytesIO()
             return TextIOWrapper(mock_file, encoding="utf-8")
-        else:
-            raise ValueError("Unsupported mode for file")
+        raise ValueError("Unsupported mode for file")
 
-    mock_open.side_effect = (
+    _mock_open.side_effect = (
         mock_open_wrapper  # Utiliser le wrapper pour chaque appel à `open`
     )
 
@@ -653,5 +650,5 @@ def test_save_sales_to_file_existing(mock_exists, mock_open):
 
     # Vérification des appels
     file_path = os.path.join(sale_generator.data_dir, "sales.json")
-    mock_open.assert_any_call(file_path, "r", encoding="utf-8")
-    mock_open.assert_any_call(file_path, "w", encoding="utf-8")
+    _mock_open.assert_any_call(file_path, "r", encoding="utf-8")
+    _mock_open.assert_any_call(file_path, "w", encoding="utf-8")

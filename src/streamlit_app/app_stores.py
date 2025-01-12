@@ -2,7 +2,6 @@ import io
 import os
 
 import boto3
-import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -572,7 +571,9 @@ def display_kpi(title, value, variation=None):
     if variation is not None:
         color = "green" if variation > 0 else "red"
         arrow = "▲" if variation > 0 else "▼"
-        variation_text = f"<p style='margin:0;font-size:16px;color:{color};'>{arrow} {abs(variation):.2f}% / mois précédent.</p>"
+        variation_text = (
+            f"<p style='margin:0;font-size:16px;color:{color};'>{arrow} {abs(variation):.2f}% / mois précédent.</p>"
+        )
     else:
         variation_text = ""
     st.markdown(
@@ -590,8 +591,8 @@ def display_kpi(title, value, variation=None):
             align-items:center;
             box-shadow:0 2px 4px rgba(0,0,0,0.1);
         '>
-            <p style='margin:0;font-size:16px;font-weight:bold;color:white;'>{title}</p>
-            <p style='margin:0;font-size:24px;font-weight:bold;color:white;'>{value}</p>
+            <p style='margin:0;font-size:16px;font-weight:bold;color:grey;'>{title}</p>
+            <p style='margin:0;font-size:24px;font-weight:bold;color:grey;'>{value}</p>
             {variation_text}
         </div>
         """,
