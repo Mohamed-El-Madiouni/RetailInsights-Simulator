@@ -1,16 +1,16 @@
 """
-Fichier principal pour configurer et démarrer l'API Retail Insights.
+Fichier principal pour configurer et démarrer l'api Retail Insights.
 
 Ce fichier inclut les routeurs définis dans différents modules et lance le serveur.
 """
 
 from fastapi import FastAPI
 
-from src.API.routes.clients_route import router as client_router
-from src.API.routes.products_route import router as product_router
-from src.API.routes.retail_data_route import router as retail_data_router
-from src.API.routes.sales_route import router as sales_router
-from src.API.routes.stores_route import router as store_router
+from src.api.routes.clients_route import router as client_router
+from src.api.routes.products_route import router as product_router
+from src.api.routes.retail_data_route import router as retail_data_router
+from src.api.routes.sales_route import router as sales_router
+from src.api.routes.stores_route import router as store_router
 
 app = FastAPI()
 
@@ -30,15 +30,15 @@ app.include_router(store_router, prefix="/stores", tags=["Stores"])
 @app.get("/")
 def get_welcome():
     """
-    Point de terminaison d'accueil de l'API.
+    Point de terminaison d'accueil de l'api.
 
     Returns:
         dict: Message de bienvenue.
     """
-    return {"message": "Bienvenue sur l'API Retail Insights!!"}
+    return {"message": "Bienvenue sur l'api Retail Insights!!"}
 
 
-# Lancer le serveur API localement pour tester
+# Lancer le serveur api localement pour tester
 if __name__ == "__main__":
     import uvicorn
 

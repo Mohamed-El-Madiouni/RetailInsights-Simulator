@@ -53,17 +53,17 @@ def save_with_pandas(data, output_file):
     print(f"Fichier sauvegardé avec Pandas : {output_file}")
 
 
-# Récupérer des données depuis une API
+# Récupérer des données depuis une api
 def fetch_from_api(url, is_test=False):
     """
-    Récupère les données depuis une API via une requête HTTP GET.
+    Récupère les données depuis une api via une requête HTTP GET.
 
     Args:
-        url (str): URL de l'API.
+        url (str): URL de l'api.
         is_test (bool): Si True, simule une réponse pour les tests. Par défaut, False.
 
     Returns:
-        list | dict: Données récupérées depuis l'API.
+        list | dict: Données récupérées depuis l'api.
 
     Raises:
         Exception: Si une erreur HTTP est rencontrée.

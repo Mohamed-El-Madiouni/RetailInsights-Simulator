@@ -14,31 +14,31 @@ API_PROCESS = None
 
 def start_api():
     """
-    Démarre l'API avec uvicorn en arrière-plan.
+    Démarre l'api avec uvicorn en arrière-plan.
 
     Exceptions:
-        RuntimeError: Si l'API ne peut pas être démarrée.
+        RuntimeError: Si l'api ne peut pas être démarrée.
     """
     global API_PROCESS
     API_PROCESS = subprocess.Popen(
-        ["uvicorn", "src.API.main:app", "--reload"],
+        ["uvicorn", "src.api.main:app", "--reload"],
         cwd="/home/ubuntu/RetailInsights-Simulator",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         preexec_fn=os.setsid,  # Permet de tuer le processus facilement
     )
-    time.sleep(5)  # Attendre que l'API soit prête
-    print("API démarrée avec succès.")
+    time.sleep(5)  # Attendre que l'api soit prête
+    print("api démarrée avec succès.")
 
 
 def stop_api():
     """
-    Arrête l'API en tuant le processus uvicorn.
+    Arrête l'api en tuant le processus uvicorn.
     """
     global API_PROCESS
     if API_PROCESS:
         os.killpg(os.getpgid(API_PROCESS.pid), signal.SIGTERM)
-        print("API arrêtée avec succès.")
+        print("api arrêtée avec succès.")
 
 
 # Configuration du DAG
@@ -56,7 +56,7 @@ with DAG(
     schedule_interval="50 11 * * *",
     start_date=days_ago(1),
 ) as dag:
-    # Tâche 1 : Démarrer l'API
+    # Tâche 1 : Démarrer l'api
     start_api_task = PythonOperator(
         task_id="start_api",
         python_callable=start_api,
@@ -67,7 +67,7 @@ with DAG(
         task_id="generate_retail_data",
         bash_command="source ~/airflow_env/venv/bin/activate && "
         "cd ~/RetailInsights-Simulator && "
-        "python src/API/retail_data_generator.py",
+        "python src/api/retail_data_generator.py",
     )
 
     # Tâche 3 : Extraire les ventes
@@ -102,7 +102,7 @@ with DAG(
         "python src/data_processing/transform/aggregate_daily_metrics.py",
     )
 
-    # Tâche 7 : Arrêter l'API
+    # Tâche 7 : Arrêter l'api
     stop_api_task = PythonOperator(
         task_id="stop_api",
         python_callable=stop_api,

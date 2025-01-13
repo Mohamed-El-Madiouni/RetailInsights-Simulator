@@ -5,9 +5,10 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from src.API.main import app
-from src.API.routes.sales_route import load_sales
-from src.API.routes.stores_route import load_stores
+from src.api.main import app
+from src.api.routes.sales_route import load_sales
+from src.api.routes.stores_route import load_stores
+from io import StringIO
 
 
 @pytest_asyncio.fixture
@@ -22,19 +23,55 @@ async def async_client():
 
 # Test des routes clients
 @pytest.mark.asyncio
-async def test_get_clients_valid(async_client):
+@patch("os.path.exists", return_value=True)  # Simuler que le fichier existe
+@patch("builtins.open")  # Mock explicite de `open`
+async def test_get_clients_valid(mock_open, mock_exists, async_client):
     """
     Teste la route `/clients` avec une ville valide.
     Vérifie que la réponse contient une liste de clients avec les champs requis (id, name, city).
     """
-    response = await async_client.get("/clients?city=Paris")
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
-    if response.json():
-        client = response.json()[0]
-        assert "id" in client
-        assert "name" in client
-        assert "city" in client
+    # Simuler un contenu JSON valide pour le fichier `clients.json`
+    file_content = (
+        '[{"id": "1", "name": "John Doe", "city": "Paris", "age": 72, "gender": "Homme", "loyalty_card": true}]'
+    )
+
+    # Fournir un fichier simulé avec StringIO
+    def mock_open_wrapper(file, mode="r", encoding=None):
+        if "r" in mode:
+            return StringIO(file_content)  # Retourner un fichier en lecture
+        raise ValueError(f"Mode non supporté: {mode}")
+
+    mock_open.side_effect = mock_open_wrapper  # Associer le wrapper personnalisé
+
+    # Logs pour déboguer les mocks
+    print(f"Mock exists called: {mock_exists.call_count} times")
+    print(f"Mock open: {mock_open}")
+
+    # Effectuer la requête de test
+    try:
+        print("Tentative de requête GET sur /clients?city=Paris")
+        response = await async_client.get("/clients?city=Paris")
+        print(f"Réponse du serveur : {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"Exception lors de la requête : {e}")
+        raise
+
+    # Vérification des assertions
+    try:
+        print("Vérification des assertions")
+        assert response.status_code == 200, f"Statut attendu : 200, obtenu : {response.status_code}"
+        assert isinstance(response.json(), list), f"Type attendu : list, obtenu : {type(response.json())}"
+        if response.json():
+            client = response.json()[0]
+            print(f"Client extrait : {client}")
+            assert "id" in client, "Champ 'id' manquant"
+            assert "name" in client, "Champ 'name' manquant"
+            assert "city" in client, "Champ 'city' manquant"
+    except AssertionError as e:
+        print(f"Erreur dans les assertions : {e}")
+        raise
+
+    print("Test terminé avec succès")
 
 
 @pytest.mark.asyncio
@@ -148,7 +185,7 @@ async def test_get_sales_valid():
             "sale_time": "11:00",
         },
     ]
-    with patch("src.API.routes.sales_route.load_sales", return_value=mock_sales_data):
+    with patch("src.api.routes.sales_route.load_sales", return_value=mock_sales_data):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/sales?sale_date=2023-12-01&store_id=store_1")
             assert response.status_code == 200
@@ -176,7 +213,7 @@ async def test_get_sales_no_match():
     mock_sales_data = [
         {"sale_id": "1", "sale_date": "2023-12-01", "store_id": "store_1"},
     ]
-    with patch("src.API.routes.sales_route.load_sales", return_value=mock_sales_data):
+    with patch("src.api.routes.sales_route.load_sales", return_value=mock_sales_data):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/sales?sale_date=2023-12-02&store_id=store_1")
 
@@ -224,7 +261,7 @@ async def test_get_sales_by_hour_valid():
         },
     ]
 
-    with patch("src.API.routes.sales_route.load_sales", return_value=mock_sales_data):
+    with patch("src.api.routes.sales_route.load_sales", return_value=mock_sales_data):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/sales/hour?sale_date=2023-12-01&hour=14")
             assert response.status_code == 200
@@ -257,7 +294,7 @@ async def test_get_sales_by_hour_no_match():
             "sale_time": "14:00",
         },
     ]
-    with patch("src.API.routes.sales_route.load_sales", return_value=mock_sales_data):
+    with patch("src.api.routes.sales_route.load_sales", return_value=mock_sales_data):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/sales/hour?sale_date=2023-12-01&hour=15")
             assert response.status_code == 200
@@ -303,7 +340,7 @@ async def test_get_stores_valid():
         }
     ]
     with patch(
-        "src.API.routes.stores_route.load_stores", return_value=mock_stores_data
+        "src.api.routes.stores_route.load_stores", return_value=mock_stores_data
     ):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/stores")
@@ -317,7 +354,7 @@ async def test_get_stores_file_not_found():
     Teste que la route `GET /stores` retourne une erreur si le fichier des magasins est introuvable.
     """
     with patch(
-        "src.API.routes.stores_route.load_stores", side_effect=FileNotFoundError
+        "src.api.routes.stores_route.load_stores", side_effect=FileNotFoundError
     ):
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/stores")
@@ -343,7 +380,7 @@ async def test_get_store_visitors_valid():
         }
     ]
     with patch(
-        "src.API.routes.retail_data_route.load_retail_data",
+        "src.api.routes.retail_data_route.load_retail_data",
         return_value=mock_retail_data,
     ):
         async with AsyncClient(app=app, base_url="http://test") as client:
@@ -371,7 +408,7 @@ async def test_get_store_visitors_file_not_found():
     Teste que la route `GET /retail_data/store` retourne une erreur si le fichier des données retail est introuvable.
     """
     with patch(
-        "src.API.routes.retail_data_route.load_retail_data",
+        "src.api.routes.retail_data_route.load_retail_data",
         side_effect=FileNotFoundError,
     ):
         async with AsyncClient(app=app, base_url="http://test") as client:
@@ -397,7 +434,7 @@ async def test_get_store_visitors_no_match():
         }
     ]
     with patch(
-        "src.API.routes.retail_data_route.load_retail_data",
+        "src.api.routes.retail_data_route.load_retail_data",
         return_value=mock_retail_data,
     ):
         async with AsyncClient(app=app, base_url="http://test") as client:

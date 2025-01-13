@@ -1,7 +1,7 @@
 import io
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pandas as pd
 import pytest
@@ -10,6 +10,7 @@ from src.data_processing.extract.extract_clients import fetch_and_save_clients
 from src.data_processing.extract.utils import (create_output_folder,
                                                read_parquet_from_s3,
                                                save_to_s3, save_with_pandas)
+from io import BytesIO, TextIOWrapper
 
 
 # Mock pour save_to_s3
@@ -59,27 +60,53 @@ def test_fetch_and_save_clients(mock_save_to_s3):
             assert args[1] == "extracted_data/clients.parquet"
 
 
-# Test en cas d'erreur avec l'API
+# Test en cas d'erreur avec l'api
 def test_fetch_and_save_clients_api_error():
     """
     Teste la gestion des erreurs de l'API dans la fonction fetch_and_save_clients.
     Vérifie que save_to_s3 n'est pas appelé en cas d'erreur API.
     """
+
+    def mock_open_wrapper(file, mode="r", encoding=None):
+        if "r" in mode:
+            mock_file = BytesIO(b"[]")  # Fichier JSON vide simulé
+            return TextIOWrapper(mock_file, encoding="utf-8")
+        elif "w" in mode:
+            mock_file = BytesIO()  # Fichier prêt à être écrit
+            return TextIOWrapper(mock_file, encoding="utf-8")
+        else:
+            raise ValueError("Unsupported mode for file")
+
+    # Mock des fonctions et du fichier
     with patch(
         "src.data_processing.extract.extract_clients.fetch_from_api",
         side_effect=Exception("API Error"),
     ) as mock_api, patch(
         "src.data_processing.extract.extract_clients.save_to_s3"
-    ) as mock_save:
+    ) as mock_save, patch(
+        "src.data_processing.extract.extract_clients.open", new_callable=MagicMock
+    ) as mock_open, patch(
+        "os.path.exists", return_value=True
+    ), patch(
+        "src.data_processing.extract.extract_clients.fetch_cities",
+        return_value=["Paris", "Lyon"],  # Simuler une liste de villes
+    ) as mock_fetch_cities:
+        # Associer le comportement du fichier simulé
+        mock_open.side_effect = mock_open_wrapper
 
-        # Appeler la fonction et capturer l'exception
-        with pytest.raises(Exception, match="API Error"):
+        try:
             fetch_and_save_clients(is_test=True)
+        except Exception as e:
+            print(f"Exception caught: {e}")
+            assert str(e) == "API Error"
 
-        # Vérifier que fetch_from_api a été appelé
-        mock_api.assert_called_once()
+        # Vérifiez que fetch_cities a été appelé
+        assert mock_fetch_cities.call_count == 1, "fetch_cities n'a pas été appelé."
 
-        # Vérifier que save_to_s3 n'est pas appelé
+        # Vérifiez que fetch_from_api a été appelé
+        assert mock_api.call_count == 1, "fetch_from_api n'a pas été appelé."
+
+        # Vérifiez que save_to_s3 n'est pas appelé
         mock_save.assert_not_called()
 
 

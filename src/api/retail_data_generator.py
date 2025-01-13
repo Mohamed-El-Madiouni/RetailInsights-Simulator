@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 from io import TextIOWrapper
 
-from src.API.sale_generator import SaleGenerator
+from src.api.sale_generator import SaleGenerator
 
 
 def get_current_date():

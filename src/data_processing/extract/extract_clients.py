@@ -31,10 +31,10 @@ def fetch_cities():
 
 def fetch_and_save_clients(is_test=False):
     """
-    Récupère les données clients pour chaque ville depuis l'API et les sauvegarde sur S3.
+    Récupère les données clients pour chaque ville depuis l'api et les sauvegarde sur S3.
 
     Args:
-        is_test (bool): Si True, utilise une URL de test pour les requêtes API.
+        is_test (bool): Si True, utilise une URL de test pour les requêtes api.
 
     Raises:
         Exception: Si une erreur survient lors de l'extraction des données pour une ville.

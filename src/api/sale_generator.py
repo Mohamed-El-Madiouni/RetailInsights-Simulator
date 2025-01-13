@@ -4,7 +4,7 @@ import random
 import uuid
 from io import TextIOWrapper
 
-from src.API.store_generator import StoreGenerator
+from src.api.store_generator import StoreGenerator
 
 
 def load_products(data_dir):

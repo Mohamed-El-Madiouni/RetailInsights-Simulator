@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master  # Déclencher le pipeline pour chaque push sur la branche principale.
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Flake8
+      run: |
+        flake8 src --max-line-length=120 --statistics --count
+
+    - name: Set PYTHONPATH
+      run: |
+        echo "PYTHONPATH=$(pwd)/src" >> $GITHUB_ENV
+
+    - name: List project files
+      run: |
+        ls -R
+
+    - name: Run tests
+      run: |
+        pytest --rootdir=src
+
+    - name: Set up SSH known_hosts
+      env:
+        EC2_HOST: ${{ secrets.EC2_HOST }}
+        EC2_USER: ${{ secrets.EC2_USER }}
+        PEM_KEY: ${{ secrets.PEM_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      env:
+        EC2_HOST: ${{ secrets.EC2_HOST }}
+        EC2_USER: ${{ secrets.EC2_USER }}
+        PEM_KEY: ${{ secrets.PEM_KEY }}
+      run: |
+        echo "$PEM_KEY" > key.pem
+        echo "echo validé"
+        chmod 600 key.pem
+        echo "echo chmod"
+        ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST "
+          cd /home/ubuntu/RetailInsights-Simulator &&
+          git fetch origin master &&
+          git reset --hard origin/master &&
+          echo 'Dépôt mis à jour avec écrasement des modifications locales'
+        "
+        echo "echo ssh1"
+        ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST 'sudo reboot'
+        echo "echo ssh2"
+        rm -f key.pem
+        echo "echo rm"

@@ -10,7 +10,7 @@ S3_FOLDER = "extracted_data/retail_data"
 
 def fetch_and_save_retail_data(date):
     """
-    Récupère les données retail_data pour une date donnée depuis l'API,
+    Récupère les données retail_data pour une date donnée depuis l'api,
     les combine avec les données existantes sur S3, et les sauvegarde.
 
     Args:
@@ -20,7 +20,7 @@ def fetch_and_save_retail_data(date):
         ValueError: Si aucune donnée n'est récupérée pour la date spécifiée.
     """
     url = f"http://127.0.0.1:8000/retail_data?date={date}"
-    new_data = fetch_from_api(url)  # Récupère les nouvelles données depuis l'API
+    new_data = fetch_from_api(url)  # Récupère les nouvelles données depuis l'api
 
     if new_data:
         # Formater la date pour nommer le fichier

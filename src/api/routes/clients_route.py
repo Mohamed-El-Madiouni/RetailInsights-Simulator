@@ -1,4 +1,5 @@
 import json
+import os
 from typing import List
 
 from fastapi import APIRouter
@@ -35,6 +36,7 @@ def load_clients():
             clients = json.load(f)
         return clients
     except FileNotFoundError:
+        print(os.listdir())
         print("Le fichier des clients n'existe pas.")
         return []
 

@@ -8,13 +8,13 @@ from unittest.mock import MagicMock, mock_open, patch
 import duckdb
 import pytest
 
-from src.API.client_generator import ClientGenerator
-from src.API.product_generator import ProductGenerator
-from src.API.retail_data_generator import (RetailDataGenerator, generate_data,
+from src.api.client_generator import ClientGenerator
+from src.api.product_generator import ProductGenerator
+from src.api.retail_data_generator import (RetailDataGenerator, generate_data,
                                            get_current_date, load_stores)
-from src.API.sale_generator import (SaleGenerator, generate_random_time,
+from src.api.sale_generator import (SaleGenerator, generate_random_time,
                                     load_clients, load_products)
-from src.API.store_generator import StoreGenerator
+from src.api.store_generator import StoreGenerator
 
 
 # Test la méthode de génération de produits
@@ -278,11 +278,11 @@ def test_validate_sales_consistency():
 @patch("os.makedirs")
 @patch("os.path.exists")
 @patch(
-    "src.API.sale_generator.load_products",
+    "src.api.sale_generator.load_products",
     return_value=[{"product_id": "1", "name": "Product A", "price": 10}],
 )
 @patch(
-    "src.API.sale_generator.load_clients",
+    "src.api.sale_generator.load_clients",
     return_value=[{"client_id": "1", "name": "Client A", "city": "Paris"}],
 )
 def test_save_sales_to_file(
@@ -342,7 +342,7 @@ def test_get_current_date():
     correctement formatée sous la forme 'YYYY-MM-DD'.
     """
     # Mock de la classe `datetime`
-    with patch("src.API.retail_data_generator.datetime") as mock_datetime:
+    with patch("src.api.retail_data_generator.datetime") as mock_datetime:
         # Configurer le mock pour simuler `datetime.now`
         mock_datetime.now.return_value = datetime(2023, 12, 1)
 
@@ -478,17 +478,17 @@ def test_generate_data_exceed_capacity():
         "random.randint", return_value=120
     ):  # Simule un dépassement de la capacité
         with patch(
-            "src.API.sale_generator.SaleGenerator.generate_sales", return_value=[]
+            "src.api.sale_generator.SaleGenerator.generate_sales", return_value=[]
         ):  # Mock des ventes
             result, _ = generate_data("2023-12-01", 15, store, "data_api")
     assert result["visitors"] == 100  # Capacité max
 
 
 @patch(
-    "src.API.retail_data_generator.load_stores",
+    "src.api.retail_data_generator.load_stores",
     return_value=[{"id": "1", "name": "Store A", "capacity": 100}],
 )
-@patch("src.API.retail_data_generator.generate_data", return_value=({}, []))
+@patch("src.api.retail_data_generator.generate_data", return_value=({}, []))
 @patch("os.makedirs")
 @patch("os.path.exists")
 def test_generate_data_day(
