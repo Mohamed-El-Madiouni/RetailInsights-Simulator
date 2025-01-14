@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from src.api.routes.logger_routes import logger
 
 router = APIRouter()
 
@@ -41,9 +42,10 @@ def load_retail_data():
     try:
         with open("data_api/retail_data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
+        logger.info("Retail data successfully loaded.")
         return data
     except FileNotFoundError:
-        print("Le fichier des données de retail n'existe pas.")
+        logger.error("Retail data file not found.")
         return []
 
 
@@ -59,18 +61,23 @@ async def get_visitors(date: str):
         List[RetailDataResponse]: Liste des données retail pour la date donnée.
         JSONResponse: Erreur si la date est invalide ou si les données ne sont pas disponibles.
     """
+    logger.info(f"GET /retail_data called with date={date}")
+
     # Vérifier si la date est valide
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
+        logger.error(f"Invalid date format: {date}. Expected 'YYYY-MM-DD'.")
         return JSONResponse(
             content={"error": "Date format is incorrect. Use 'YYYY-MM-DD'."},
-            status_code=400,  # Code de statut HTTP 400 (mauvaise requête)
+            status_code=400,
         )
+
     # Charger les données de retail
     try:
         retail_data = load_retail_data()  # Cette fonction charge les données du fichier
     except FileNotFoundError:
+        logger.error("Error loading retail data.")
         return JSONResponse(
             content={"error": "Retail data file not found."},
             status_code=404,
@@ -90,6 +97,11 @@ async def get_visitors(date: str):
         if entry["date"] == date
     ]
 
+    if not response:
+        logger.warning(f"No data found for date: {date}")
+    else:
+        logger.info(f"Retrieved {len(response)} records for date: {date}")
+
     return response
 
 
@@ -105,17 +117,20 @@ async def get_store_visitors(date: str, store_id: str):
     Returns:
         List[RetailDataResponse]: Liste des données retail pour le magasin et la date donnés.
     """
+    logger.info(f"GET /retail_data/store called with date={date}, store_id={store_id}")
+
     # Vérifier si la date est valide
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
+        logger.error(f"Invalid date format: {date}. Expected 'YYYY-MM-DD'.")
         return [{"error": "Date format is incorrect. Use 'YYYY-MM-DD'."}]
 
     # Charger les données de retail
     try:
-        retail_data = load_retail_data()  # Cette fonction charge les données du fichier
+        retail_data = load_retail_data()
     except FileNotFoundError:
-        print("Le fichier des données de retail n'existe pas.")
+        logger.error("Error loading retail data.")
         return [{"error": "Retail data file not found."}]
 
     # Filtrer les données pour inclure uniquement celles correspondant à la date et au store_id
@@ -134,6 +149,9 @@ async def get_store_visitors(date: str, store_id: str):
 
     # Si aucune donnée n'est trouvée
     if not filtered_data:
+        logger.warning(f"No data found for store_id={store_id} on date={date}")
         return [{"error": f"No retail data found for store ID: {store_id} on {date}."}]
+    else:
+        logger.info(f"Retrieved {len(filtered_data)} records for store_id={store_id} on date={date}")
 
     return filtered_data

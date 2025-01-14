@@ -2,6 +2,7 @@ import json
 import os
 
 from src.data_processing.extract.utils import fetch_from_api, save_to_s3
+from src.data_processing.extract.logger_extraction import extraction_logger
 
 S3_FOLDER = "extracted_data"
 
@@ -23,8 +24,9 @@ def fetch_cities():
             for line in json.load(f):
                 if line["city"] not in cities:
                     cities.append(line["city"])
+        extraction_logger.info(f"Extracted {len(cities)} unique cities from 'clients.json'.")
     else:
-        print("Le fichier clients.json n'existe pas.")
+        extraction_logger.error("File 'clients.json' not found.")
         raise FileNotFoundError("Le fichier clients.json n'existe pas.")
     return cities
 
@@ -42,21 +44,33 @@ def fetch_and_save_clients(is_test=False):
     base_url = "http://test" if is_test else "http://127.0.0.1:8000"
     cities = fetch_cities()
     all_clients = []
+
+    extraction_logger.info(f"Starting client extraction for {len(cities)} cities.")
     for city in cities:
         url = f"{base_url}/clients?city={city}"
         try:
             data = fetch_from_api(url, is_test=is_test)
             if data:
                 all_clients.extend(data)
+                extraction_logger.info(f"Successfully extracted {len(data)} clients for city {city}.")
         except Exception as e:
-            print(f"Erreur lors de l'extraction pour la ville {city}: {e}")
+            extraction_logger.error(f"Error during extraction for city {city}: {e}")
             raise  # Relever l'exception pour interrompre l'exécution
 
     # Sauvegarder les données directement sur S3
     s3_key = f"{S3_FOLDER}/clients.parquet"  # Chemin dans S3
-    save_to_s3(all_clients, s3_key)
+    try:
+        save_to_s3(all_clients, s3_key)
+        extraction_logger.info(f"Clients data successfully saved to S3 at '{s3_key}'.")
+    except Exception as e:
+        extraction_logger.error(f"Error saving clients data to S3: {e}")
+        raise
 
 
 # Point d'entrée pour exécuter la fonction de récupération et de sauvegarde des clients.
 if __name__ == "__main__":
-    fetch_and_save_clients()
+    try:
+        fetch_and_save_clients()
+        extraction_logger.info("Client extraction process completed successfully.")
+    except Exception as e:
+        extraction_logger.critical(f"Client extraction process failed: {e}")

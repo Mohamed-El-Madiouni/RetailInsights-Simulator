@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from src.api.routes.logger_routes import logger
 
 router = APIRouter()
 
@@ -31,9 +32,10 @@ def load_products():
     try:
         with open("data_api/products.json", "r", encoding="utf-8") as f:
             products = json.load(f)
+        logger.info("Products data successfully loaded.")
         return products
     except FileNotFoundError:
-        print("Le fichier des produits n'existe pas.")
+        logger.error("Products data file not found.")
         return []
 
 
@@ -46,11 +48,20 @@ async def get_products():
         List[ProductResponse]: Liste des produits si le fichier est chargé avec succès.
         dict: Message d'erreur si le fichier 'products.json' est introuvable.
     """
+    logger.info("GET /products called.")
+
     # Charger les données des produits
     try:
         products = load_products()
     except FileNotFoundError:
-        return {"error": "Products data file not found."}
+        logger.error("Error loading products data.")
+        return [{"error": "Products data file not found."}]
+
+    if not products:  # si le fichier est vide
+        logger.warning("No products found in products.json.")
+        return [{"error": "No products available."}]
+
+    logger.info(f"{len(products)} products retrieved successfully.")
 
     # Retourner la liste des produits tels que définis dans le fichier JSON
     return products

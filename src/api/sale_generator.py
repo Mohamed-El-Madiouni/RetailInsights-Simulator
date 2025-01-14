@@ -5,6 +5,7 @@ import uuid
 from io import TextIOWrapper
 
 from src.api.store_generator import StoreGenerator
+from src.api.logger_generation import generation_logger
 
 
 def load_products(data_dir):
@@ -22,9 +23,10 @@ def load_products(data_dir):
         file_path = os.path.join(data_dir, "products.json")
         with open(file_path, "r", encoding="utf-8") as f:
             products = json.load(f)
+        generation_logger.info(f"Loaded {len(products)} products from 'products.json'.")
         return products
     except FileNotFoundError:
-        print("Le fichier des produits n'existe pas.")
+        generation_logger.error("Products file 'products.json' not found.")
         return []
 
 
@@ -43,9 +45,10 @@ def load_clients(data_dir):
         file_path = os.path.join(data_dir, "clients.json")
         with open(file_path, "r", encoding="utf-8") as f:
             clients = json.load(f)
+        generation_logger.info(f"Loaded {len(clients)} clients from 'clients.json'.")
         return clients
     except FileNotFoundError:
-        print("Le fichier des clients n'existe pas.")
+        generation_logger.error("Clients file 'clients.json' not found.")
         return []
 
 
@@ -63,6 +66,7 @@ def generate_random_time(hour):
         ValueError: Si l'heure est en dehors de l'intervalle [0, 23].
     """
     if not (0 <= hour <= 23):
+        generation_logger.error("Invalid hour provided for generate_random_time.")
         raise ValueError("L'heure doit être entre 0 et 23 inclus.")
 
     minute = random.randint(0, 59)
@@ -105,6 +109,7 @@ class SaleGenerator:
             list: Liste des ventes générées.
         """
         if self.num_sales is not None:
+            generation_logger.info(f"Starting sales generation for {self.num_sales} sales.")
             for _ in range(self.num_sales):
                 # Trouver un client dont la ville correspond à celle du magasin
                 client = self._find_client_for_store(self.store)
@@ -112,6 +117,9 @@ class SaleGenerator:
                 if (
                     client is None
                 ):  # Si aucun client ne correspond à la ville du magasin, passer à la prochaine itération
+                    generation_logger.warning(
+                        f"No clients found for store {self.store['name']} in city {self.store['location']}."
+                    )
                     continue
 
                 nb_type_product = random.randint(
@@ -144,6 +152,7 @@ class SaleGenerator:
                             "sale_time": sale_time,
                         }
                     )
+            generation_logger.info(f"Generated {len(self.sales)} sales.")
         return self.sales
 
     def _find_client_for_store(self, store):
@@ -162,7 +171,7 @@ class SaleGenerator:
             # Retourner un client choisi aléatoirement
             return random.choice(clients_in_city)
         else:
-            print(f"Aucun client trouvé pour la ville : {store['location']}")
+            generation_logger.warning(f"No clients available for city {store['location']}.")
             return None
 
     def get_sales(self):
@@ -185,21 +194,22 @@ class SaleGenerator:
         os.makedirs(self.data_dir, exist_ok=True)
         file_path = os.path.join(self.data_dir, "sales.json")
 
-        if os.path.exists(file_path):
-            # Charger les données existantes si le fichier existe
-            with open(file_path, "r", encoding="utf-8") as f:
-                existing_sales = json.load(f)
-            # Ajouter les nouvelles ventes aux données existantes
-            existing_sales.extend(self.sales)
+        try:
+            if os.path.exists(file_path):
+                # Charger les données existantes si le fichier existe
+                with open(file_path, "r", encoding="utf-8") as f:
+                    existing_sales = json.load(f)
+                # Ajouter les nouvelles ventes aux données existantes
+                existing_sales.extend(self.sales)
+            else:
+                existing_sales = self.sales
+
             with open(file_path, "w", encoding="utf-8") as f:
                 assert isinstance(f, TextIOWrapper)
                 json.dump(existing_sales, f, ensure_ascii=False, indent=4)
-        else:
-            # Si le fichier n'existe pas, créer un nouveau fichier avec les données
-            with open(file_path, "w", encoding="utf-8") as f:
-                assert isinstance(f, TextIOWrapper)
-                json.dump(self.sales, f, ensure_ascii=False, indent=4)
-        print("écriture dans le fichier 'sales.json'")
+            generation_logger.info(f"Sales data saved to {file_path}.")
+        except Exception as e:
+            generation_logger.error(f"Error saving sales to {file_path}: {e}")
 
 
 # Exemple d'utilisation pour générer et sauvegarder des ventes pour une date donnée.

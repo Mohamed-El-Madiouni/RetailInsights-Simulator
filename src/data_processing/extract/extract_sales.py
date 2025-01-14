@@ -8,6 +8,7 @@ import pandas as pd
 from src.data_processing.extract.utils import (fetch_from_api,
                                                read_parquet_from_s3,
                                                save_to_s3)
+from src.data_processing.extract.logger_extraction import extraction_logger
 
 # Paramètres S3
 S3_FOLDER = "extracted_data/sales"
@@ -32,8 +33,9 @@ def fetch_stores():
             for line in json.load(f):
                 if line["id"] not in stores:
                     stores.append(line["id"])
+        extraction_logger.info(f"Successfully fetched {len(stores)} stores from 'stores.json'.")
     else:
-        print("Le fichier stores.json n'existe pas.")
+        extraction_logger.error("File 'stores.json' not found.")
         raise FileNotFoundError("Le fichier stores.json n'existe pas.")
     return stores
 
@@ -48,15 +50,21 @@ def fetch_and_save_sales(date):
     Raises:
         Exception: Si une erreur inattendue survient lors de la lecture ou de l'écriture sur S3.
     """
+    extraction_logger.info(f"Starting sales data extraction for date {date}.")
     stores = fetch_stores()
     all_sales = []
 
     # Récupérer les données pour chaque magasin
     for store in stores:
         url = f"http://127.0.0.1:8000/sales?sale_date={date}&store_id={store}"
-        data = fetch_from_api(url)
-        if data:
-            all_sales.extend(data)
+        try:
+            data = fetch_from_api(url)
+            if data:
+                all_sales.extend(data)
+                extraction_logger.info(f"Fetched {len(data)} sales for store {store}.")
+        except Exception as e:
+            extraction_logger.error(f"Error fetching sales for store {store}: {e}")
+            continue
 
     if all_sales:
         # Formater la date pour nommer le fichier
@@ -75,25 +83,30 @@ def fetch_and_save_sales(date):
                 updated_data.drop_duplicates(inplace=True)
             else:
                 updated_data = pd.DataFrame(all_sales)
+            extraction_logger.info(f"Existing data merged for date {date}.")
         except Exception as e:
             if "NoSuchKey" in str(e):
-                print(
-                    f"Aucune donnée existante pour {s3_key}. Création d'un nouveau fichier."
-                )
+                extraction_logger.warning(f"No existing data found for {s3_key}. Creating a new file.")
             else:
-                print(f"Erreur inattendue lors de la tentative de lecture : {e}")
+                extraction_logger.error(f"Unexpected error while reading S3 data: {e}")
             updated_data = pd.DataFrame(all_sales)
 
-        # Sauvegarder les données mises à jour sur S3
-        save_to_s3(updated_data, s3_key)
+        try:
+            # Sauvegarder les données mises à jour sur S3
+            save_to_s3(updated_data, s3_key)
+            extraction_logger.info(f"Sales data successfully saved to S3 at '{s3_key}'.")
+        except Exception as e:
+            extraction_logger.error(f"Error saving sales data to S3: {e}")
+            raise
     else:
-        print(f"Aucune donnée de ventes récupérée pour la date {date}.")
+        extraction_logger.warning(f"No sales data retrieved for date {date}.")
 
 
 # Point d'entrée pour exécuter la récupération et la sauvegarde des données de ventes.
 # L'utilisateur doit fournir une date en argument (format : 'YYYY-MM-DD').
 if __name__ == "__main__":
     if len(sys.argv) < 2:
+        extraction_logger.error("Date parameter missing. Use format 'YYYY-MM-DD'.")
         print("Vous devez renseigner une date en argument (format : YYYY-MM-DD)")
         sys.exit(1)
 
@@ -102,8 +115,13 @@ if __name__ == "__main__":
     try:
         # Valider le format de la date
         date_obj = datetime.strptime(date_param, "%Y-%m-%d")
-        print(f"Date passée en paramètre : {date_obj.strftime('%Y-%m-%d')}")
+        extraction_logger.info(f"Received date parameter: {date_obj.strftime('%Y-%m-%d')}.")
         fetch_and_save_sales(date_param)
+        extraction_logger.info(f"Sales data extraction process completed successfully for date {date_param}.")
     except ValueError:
+        extraction_logger.error("Invalid date format. Use 'YYYY-MM-DD'.")
         print("Erreur : Le format de la date est incorrect. Utilisez 'YYYY-MM-DD'.")
+        sys.exit(1)
+    except Exception as e:
+        extraction_logger.critical(f"Sales data extraction process failed: {e}")
         sys.exit(1)

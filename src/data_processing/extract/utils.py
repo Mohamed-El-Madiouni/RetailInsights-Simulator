@@ -5,6 +5,7 @@ import tempfile
 import boto3
 import pandas as pd
 from dotenv import load_dotenv
+from src.data_processing.extract.logger_extraction import extraction_logger
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -35,7 +36,7 @@ def create_output_folder(folder_name="data"):
     """
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
-        print(f"Dossier créé : {folder_name}")
+        extraction_logger.info(f"Folder created: {folder_name}.")
     return folder_name
 
 
@@ -48,9 +49,13 @@ def save_with_pandas(data, output_file):
         data (list | dict): Données à sauvegarder.
         output_file (str): Chemin du fichier de sortie.
     """
-    df = pd.DataFrame(data)
-    df.to_parquet(output_file, engine="pyarrow", compression="snappy")
-    print(f"Fichier sauvegardé avec Pandas : {output_file}")
+    try:
+        df = pd.DataFrame(data)
+        df.to_parquet(output_file, engine="pyarrow", compression="snappy")
+        extraction_logger.info(f"File saved locally with Pandas: {output_file}.")
+    except Exception as e:
+        extraction_logger.error(f"Error saving file with Pandas: {e}")
+        raise
 
 
 # Récupérer des données depuis une api
@@ -92,17 +97,17 @@ def fetch_from_api(url, is_test=False):
     else:
         import requests
 
-        response = requests.get(url)
-        if response.status_code == 200:
-            print(f"Données récupérées depuis {url}")
-            return response.json()
-        else:
-            print(
-                f"Erreur lors de la récupération des données depuis {url}: {response.status_code}"
-            )
-            raise Exception(
-                f"Erreur lors de la récupération des données depuis {url}: {response.status_code}"
-            )
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                extraction_logger.info(f"Data fetched successfully from {url}.")
+                return response.json()
+            else:
+                extraction_logger.error(f"Error fetching data from {url}: {response.status_code}")
+                raise Exception(f"Error fetching data from {url}: {response.status_code}")
+        except Exception as e:
+            extraction_logger.error(f"Exception during API fetch from {url}: {e}")
+            raise
 
 
 def save_to_s3(data, s3_key):
@@ -113,17 +118,21 @@ def save_to_s3(data, s3_key):
         data (list | pd.DataFrame): Données à sauvegarder.
         s3_key (str): Chemin du fichier dans le bucket S3.
     """
-    # Vérifier si les données sont déjà un DataFrame
-    if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame(data)
-    else:
-        df = data
+    try:
+        # Vérifier si les données sont déjà un DataFrame
+        if not isinstance(data, pd.DataFrame):
+            df = pd.DataFrame(data)
+        else:
+            df = data
 
-    # Utiliser un fichier temporaire pour réduire l'empreinte mémoire
-    with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-        df.to_parquet(temp_file.name, engine="pyarrow", compression="zstd", index=False)
-        s3.upload_file(temp_file.name, BUCKET_NAME, s3_key)
-    print(f"Fichier sauvegardé sur S3 : s3://{BUCKET_NAME}/{s3_key}")
+        # Utiliser un fichier temporaire pour réduire l'empreinte mémoire
+        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+            df.to_parquet(temp_file.name, engine="pyarrow", compression="zstd", index=False)
+            s3.upload_file(temp_file.name, BUCKET_NAME, s3_key)
+        extraction_logger.info(f"File successfully saved to S3: s3://{BUCKET_NAME}/{s3_key}.")
+    except Exception as e:
+        extraction_logger.error(f"Error saving file to S3: {e}")
+        raise
 
 
 def read_parquet_from_s3(s3_key):
@@ -136,6 +145,11 @@ def read_parquet_from_s3(s3_key):
     Returns:
         pd.DataFrame: Données du fichier chargé.
     """
-    response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
-    buffer = io.BytesIO(response["Body"].read())
-    return pd.read_parquet(buffer)
+    try:
+        response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
+        buffer = io.BytesIO(response["Body"].read())
+        extraction_logger.info(f"File successfully read from S3: s3://{BUCKET_NAME}/{s3_key}.")
+        return pd.read_parquet(buffer)
+    except Exception as e:
+        extraction_logger.error(f"Error reading file from S3: s3://{BUCKET_NAME}/{s3_key} - {e}")
+        raise

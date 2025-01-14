@@ -7,6 +7,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
+from src.airflow.logger_airflow import airflow_logger
 
 # Variables globales
 API_PROCESS = None
@@ -20,15 +21,20 @@ def start_api():
         RuntimeError: Si l'api ne peut pas être démarrée.
     """
     global API_PROCESS
-    API_PROCESS = subprocess.Popen(
-        ["uvicorn", "src.api.main:app", "--reload"],
-        cwd="/home/ubuntu/RetailInsights-Simulator",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        preexec_fn=os.setsid,  # Permet de tuer le processus facilement
-    )
-    time.sleep(5)  # Attendre que l'api soit prête
-    print("api démarrée avec succès.")
+    try:
+        airflow_logger.info("Démarrage de l'API avec uvicorn.")
+        API_PROCESS = subprocess.Popen(
+            ["uvicorn", "src.api.main:app", "--reload"],
+            cwd="/home/ubuntu/RetailInsights-Simulator",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=os.setsid,  # Permet de tuer le processus facilement
+        )
+        time.sleep(5)  # Attendre que l'api soit prête
+        airflow_logger.info("API démarrée avec succès.")
+    except Exception as e:
+        airflow_logger.error(f"Erreur lors du démarrage de l'API : {e}")
+        raise RuntimeError("Échec du démarrage de l'API.")
 
 
 def stop_api():
@@ -36,9 +42,12 @@ def stop_api():
     Arrête l'api en tuant le processus uvicorn.
     """
     global API_PROCESS
-    if API_PROCESS:
-        os.killpg(os.getpgid(API_PROCESS.pid), signal.SIGTERM)
-        print("api arrêtée avec succès.")
+    try:
+        if API_PROCESS:
+            os.killpg(os.getpgid(API_PROCESS.pid), signal.SIGTERM)
+            airflow_logger.info("API arrêtée avec succès.")
+    except Exception as e:
+        airflow_logger.error(f"Erreur lors de l'arrêt de l'API : {e}")
 
 
 # Configuration du DAG
@@ -68,6 +77,12 @@ with DAG(
         bash_command="source ~/airflow_env/venv/bin/activate && "
         "cd ~/RetailInsights-Simulator && "
         "python src/api/retail_data_generator.py",
+        on_success_callback=lambda context: airflow_logger.info(
+            "Tâche generate_retail_data terminée avec succès."
+        ),
+        on_failure_callback=lambda context: airflow_logger.error(
+            "Erreur lors de la tâche generate_retail_data."
+        ),
     )
 
     # Tâche 3 : Extraire les ventes
@@ -76,6 +91,12 @@ with DAG(
         bash_command="source ~/airflow_env/venv/bin/activate && "
         "cd ~/RetailInsights-Simulator && "
         "python src/data_processing/extract/extract_sales.py",
+        on_success_callback=lambda context: airflow_logger.info(
+            "Tâche extract_sales terminée avec succès."
+        ),
+        on_failure_callback=lambda context: airflow_logger.error(
+            "Erreur lors de la tâche extract_sales."
+        ),
     )
 
     # Tâche 4 : Extraire les données retail
@@ -84,6 +105,12 @@ with DAG(
         bash_command="source ~/airflow_env/venv/bin/activate && "
         "cd ~/RetailInsights-Simulator && "
         "python src/data_processing/extract/extract_retail_data.py",
+        on_success_callback=lambda context: airflow_logger.info(
+            "Tâche extract_retail_data terminée avec succès."
+        ),
+        on_failure_callback=lambda context: airflow_logger.error(
+            "Erreur lors de la tâche extract_retail_data."
+        ),
     )
 
     # Tâche 5 : Supprimer les fichiers temporaires pour libérer de l'espace et éviter les conflits
@@ -92,6 +119,12 @@ with DAG(
         task_id="cleanup_files",
         bash_command="rm -rf ~/RetailInsights-Simulator/data_api/sales.json "
         "~/RetailInsights-Simulator/data_api/retail_data.json",
+        on_success_callback=lambda context: airflow_logger.info(
+            "Tâche cleanup_files terminée avec succès."
+        ),
+        on_failure_callback=lambda context: airflow_logger.error(
+            "Erreur lors de la tâche cleanup_files."
+        ),
     )
 
     # Tâche 6 : Agréger les métriques journalières
@@ -100,6 +133,12 @@ with DAG(
         bash_command="source ~/airflow_env/venv/bin/activate && "
         "cd ~/RetailInsights-Simulator && "
         "python src/data_processing/transform/aggregate_daily_metrics.py",
+        on_success_callback=lambda context: airflow_logger.info(
+            "Tâche aggregate_metrics terminée avec succès."
+        ),
+        on_failure_callback=lambda context: airflow_logger.error(
+            "Erreur lors de la tâche aggregate_metrics."
+        ),
     )
 
     # Tâche 7 : Arrêter l'api

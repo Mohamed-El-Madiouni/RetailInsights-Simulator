@@ -4,6 +4,7 @@ import random
 from io import TextIOWrapper
 
 from faker import Faker
+from src.api.logger_generation import generation_logger
 
 
 class ClientGenerator:
@@ -32,6 +33,7 @@ class ClientGenerator:
         Args:
             num_clients (int): Nombre de clients à générer. Par défaut, 20 000.
         """
+        generation_logger.info(f"Starting client generation for {num_clients} clients.")
         for _ in range(num_clients):
             name = self.fake.name()
 
@@ -39,6 +41,7 @@ class ClientGenerator:
             if random.random() < 0.0002:  # 0.02% de chance d'erreur
                 # Cas d'erreur : âge entre 200 et 1000
                 age = random.randint(200, 1000)
+                generation_logger.warning(f"Unrealistic age generated: {age}")
             else:
                 # Sinon, générer un âge réaliste entre 18 et 80
                 age = random.randint(18, 80)
@@ -62,6 +65,7 @@ class ClientGenerator:
                     "city": city,
                 }
             )
+        generation_logger.info(f"Successfully generated {len(self.clients)} clients.")
 
     def save_clients(self, filename="clients.json"):
         """
@@ -79,10 +83,14 @@ class ClientGenerator:
         # Définir le chemin du fichier dans le dossier spécifié
         filepath = os.path.join(self.data_dir, filename)
 
-        # Sauvegarde les données dans un fichier JSON
-        with open(filepath, "w", encoding="utf-8") as f:
-            assert isinstance(f, TextIOWrapper)
-            json.dump(self.clients, f, ensure_ascii=False, indent=4)
+        try:
+            # Sauvegarde les données dans un fichier JSON
+            with open(filepath, "w", encoding="utf-8") as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(self.clients, f, ensure_ascii=False, indent=4)
+            generation_logger.info(f"Clients successfully saved to {filepath}.")
+        except Exception as e:
+            generation_logger.error(f"Error saving clients to {filepath}: {str(e)}")
 
     def get_clients(self):
         """

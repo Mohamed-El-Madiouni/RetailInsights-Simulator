@@ -87,7 +87,10 @@ async def test_get_clients_invalid(async_client):
 
 # Test des routes produits
 @pytest.mark.asyncio
-async def test_get_products(async_client):
+@patch("src.api.routes.products_route.load_products", return_value=[
+    {"id": "1", "name": "Product A", "category": "Category A", "price": 10.0, "cost": 120}
+])
+async def test_get_products(mock_load_products, async_client):
     """
     Teste la route `/products`.
     Vérifie que la réponse contient une liste de produits avec les champs requis (id, name, category, price).

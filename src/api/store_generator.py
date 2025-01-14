@@ -3,6 +3,7 @@ import os
 import random
 import uuid
 from io import TextIOWrapper
+from src.api.logger_generation import generation_logger
 
 
 class StoreGenerator:
@@ -23,6 +24,7 @@ class StoreGenerator:
         Args:
             num_stores (int): Nombre de magasins à générer. Par défaut, 10.
         """
+        generation_logger.info(f"Starting store generation for {num_stores} stores.")
         for i in range(num_stores):
             store_name = f"Magasin_{i+1}"
             location = random.choice(["Paris", "Lyon", "Marseille", "Nice", "Toulouse"])
@@ -43,6 +45,7 @@ class StoreGenerator:
                     "closing_hour": closing_hour,
                 }
             )
+        generation_logger.info(f"Successfully generated {len(self.stores)} stores.")
 
     def save_stores(self, filename="stores.json"):
         """
@@ -57,10 +60,14 @@ class StoreGenerator:
         # Définir le chemin du fichier dans le dossier spécifié
         filepath = os.path.join(self.data_dir, filename)
 
-        # Sauvegarde les données dans un fichier JSON
-        with open(filepath, "w", encoding="utf-8") as f:
-            assert isinstance(f, TextIOWrapper)
-            json.dump(self.stores, f, ensure_ascii=False, indent=4)
+        try:
+            # Sauvegarde les données dans un fichier JSON
+            with open(filepath, "w", encoding="utf-8") as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(self.stores, f, ensure_ascii=False, indent=4)
+            generation_logger.info(f"Stores successfully saved to {filepath}.")
+        except Exception as e:
+            generation_logger.error(f"Error saving stores to {filepath}: {e}")
 
     def get_stores(self):
         """

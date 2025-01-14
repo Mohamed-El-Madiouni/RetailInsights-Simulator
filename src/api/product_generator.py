@@ -3,6 +3,7 @@ import os
 import random
 import uuid
 from io import TextIOWrapper
+from src.api.logger_generation import generation_logger
 
 
 class ProductGenerator:
@@ -37,6 +38,7 @@ class ProductGenerator:
         Args:
             num_products (int): Nombre de produits à générer. Par défaut, 50.
         """
+        generation_logger.info(f"Starting product generation for {num_products} products.")
         for i in range(num_products):
             product_name = random.choice(self.product_names)
             category = None
@@ -96,6 +98,7 @@ class ProductGenerator:
                     "cost": cost,
                 }
             )
+        generation_logger.info(f"Successfully generated {len(self.products)} products.")
 
     def save_products(self, filename="products.json"):
         """
@@ -113,10 +116,14 @@ class ProductGenerator:
         # Définir le chemin du fichier dans le dossier spécifié
         filepath = os.path.join(self.data_dir, filename)
 
-        # Sauvegarde les données dans un fichier JSON
-        with open(filepath, "w", encoding="utf-8") as f:
-            assert isinstance(f, TextIOWrapper)
-            json.dump(self.products, f, ensure_ascii=False, indent=4)
+        try:
+            # Sauvegarde les données dans un fichier JSON
+            with open(filepath, "w", encoding="utf-8") as f:
+                assert isinstance(f, TextIOWrapper)
+                json.dump(self.products, f, ensure_ascii=False, indent=4)
+            generation_logger.info(f"Products successfully saved to {filepath}.")
+        except Exception as e:
+            generation_logger.error(f"Error saving products to {filepath}: {str(e)}")
 
     def get_products(self):
         """

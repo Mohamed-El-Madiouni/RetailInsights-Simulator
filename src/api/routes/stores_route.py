@@ -3,6 +3,7 @@ from typing import List, Union
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from src.api.routes.logger_routes import logger
 
 router = APIRouter()
 
@@ -39,9 +40,10 @@ def load_stores():
     try:
         with open("data_api/stores.json", "r", encoding="utf-8") as f:
             stores = json.load(f)
+        logger.info("Stores data successfully loaded.")
         return stores
     except FileNotFoundError:
-        print("Le fichier des magasins n'existe pas.")
+        logger.error("Stores data file not found.")
         return []
 
 
@@ -53,11 +55,20 @@ async def get_stores():
     Returns:
         List[StoreResponse]: Liste des magasins si le fichier est chargé avec succès.
     """
+    logger.info("GET /stores called.")
+
     # Charger les données des magasins et gérer les cas où le fichier est introuvable
     try:
         stores = load_stores()
     except FileNotFoundError:
+        logger.error("Error loading stores data.")
         return [{"error": "Stores data file not found."}]
+
+    if not stores:
+        logger.warning("No stores found in stores.json.")
+        return [{"error": "No stores available."}]
+
+    logger.info(f"Retrieved {len(stores)} stores.")
 
     # Formater et retourner la réponse
     return stores
