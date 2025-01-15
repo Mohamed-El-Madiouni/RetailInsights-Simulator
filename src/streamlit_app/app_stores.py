@@ -1,5 +1,6 @@
 import io
 import os
+from datetime import datetime
 
 import boto3
 import pandas as pd
@@ -995,13 +996,17 @@ def main():
                     elif selected_graph_type == "Mensuel":
                         file_suffix = f"_{selected_year}"
 
-                    st.download_button(
+                    clicked = st.download_button(
                         label="Télécharger les données en CSV",
                         data=csv_data,
                         file_name=f"metrics_{file_prefix}_{selected_graph_type}{file_suffix}.csv",
                         mime="text/csv",
                     )
                     streamlit_logger.info("Téléchargement des données en CSV proposé à l'utilisateur.")
+
+                    if clicked:
+                        streamlit_logger.info("Un utilisateur a télécharger les données en CSV.")
+
             except Exception as e:
                 streamlit_logger.error(f"Erreur lors de l'affichage des graphiques : {e}")
                 st.error("Une erreur est survenue lors de l'affichage des graphiques.")
@@ -1010,6 +1015,10 @@ def main():
             try:
                 streamlit_logger.info("Affichage des KPI généraux lancé.")
                 st.markdown("### KPI Généraux")
+
+                # Obtenir la date actuelle
+                today = datetime.today()
+                current_day = today.day
 
                 # Convertir la colonne `date` en datetime si ce n'est pas déjà fait
                 metrics_df["date"] = pd.to_datetime(metrics_df["date"], errors="coerce")
@@ -1076,6 +1085,10 @@ def main():
                         filtered_data["store_id"] == selected_store_id
                     ]
 
+                # Si le mois sélectionné est le mois en cours
+                if selected_year == today.year and selected_month_num == today.month:
+                    filtered_data = filtered_data[filtered_data["date"].dt.day <= current_day]
+
                 # Calcul des KPI avec les données filtrées
                 kpis = calculate_kpis(filtered_data)
 
@@ -1105,6 +1118,37 @@ def main():
                             (metrics_df["date"].dt.year == selected_year - 1)
                             & (metrics_df["date"].dt.month == 12)
                         ]
+
+                if selected_year == today.year and selected_month_num == today.month:
+                    # Si le mois est en cours, filtrer jusqu'au jour actuel pour le mois précédent
+                    if selected_store_id is not None:
+                        previous_month_data = metrics_df[
+                            (metrics_df["date"].dt.year == selected_year)
+                            & (metrics_df["date"].dt.month == selected_month_num - 1)
+                            & (metrics_df["date"].dt.day <= current_day)
+                            & (metrics_df["store_id"] == selected_store_id)
+                            ]
+                    else:
+                        previous_month_data = metrics_df[
+                            (metrics_df["date"].dt.year == selected_year)
+                            & (metrics_df["date"].dt.month == selected_month_num - 1)
+                            & (metrics_df["date"].dt.day <= current_day)
+                            ]
+                    # Si le mois est janvier, aller chercher décembre de l'année précédente
+                    if selected_month_num == 1:
+                        if selected_store_id is not None:
+                            previous_month_data = metrics_df[
+                                (metrics_df["date"].dt.year == selected_year - 1)
+                                & (metrics_df["date"].dt.month == 12)
+                                & (metrics_df["date"].dt.day <= current_day)
+                                & (metrics_df["store_id"] == selected_store_id)
+                                ]
+                        else:
+                            previous_month_data = metrics_df[
+                                (metrics_df["date"].dt.year == selected_year - 1)
+                                & (metrics_df["date"].dt.month == 12)
+                                & (metrics_df["date"].dt.day <= current_day)
+                            ]
 
                 # Calcul des variations
                 variations = calculate_variations(filtered_data, previous_month_data)
