@@ -70,7 +70,7 @@ def fetch_and_save_sales(date):
         # Formater la date pour nommer le fichier
         day_str = pd.to_datetime(date).strftime("%Y-%m-%d")
         month_str = pd.to_datetime(date).strftime("%Y-%m")
-        s3_key = f"{S3_FOLDER}/sales_{month_str}/sales_{day_str}.parquet"
+        s3_key = f"{S3_FOLDER}/sale_date={day_str}/sales_{day_str}.parquet"
 
         # Charger les données existantes depuis S3, s'il y en a
         try:

@@ -31,7 +31,7 @@ def fetch_and_save_retail_data(date):
             # Formater la date pour nommer le fichier
             day_str = pd.to_datetime(date).strftime("%Y-%m-%d")
             month_str = pd.to_datetime(date).strftime("%Y-%m")
-            s3_key = f"{S3_FOLDER}/retail_data_{month_str}/retail_data_{day_str}.parquet"
+            s3_key = f"{S3_FOLDER}/date={day_str}/retail_data_{day_str}.parquet"
 
             # Charger les données existantes depuis S3, s'il y en a
             try:

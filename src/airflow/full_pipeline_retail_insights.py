@@ -8,6 +8,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from src.airflow.logger_airflow import airflow_logger
+from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 
 # Variables globales
 API_PROCESS = None
@@ -147,12 +148,29 @@ with DAG(
         python_callable=stop_api,
     )
 
+    repair_sales_table = AthenaOperator(
+        task_id="repair_sales_partition_table",
+        query="MSCK REPAIR TABLE sales;",
+        database="retailinsights_catalog",
+        output_location="s3://retail-insights-bucket/athena-query-results/",
+        aws_conn_id="aws_default",
+    )
+
+    repair_retail_data_table = AthenaOperator(
+        task_id="repair_retail_data_partition_table",
+        query="MSCK REPAIR TABLE retail_data;",
+        database="retailinsights_catalog",
+        output_location="s3://retail-insights-bucket/athena-query-results/",
+        aws_conn_id="aws_default",
+    )
+
     # Définir l'ordre des tâches
     (
         start_api_task
         >> generate_data
         >> [extract_sales, extract_retail_data]
         >> cleanup_files
+        >> [repair_sales_table, repair_retail_data_table]
         >> aggregate_metrics
         >> stop_api_task
     )

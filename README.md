@@ -1,6 +1,9 @@
 # RetailInsights-Simulator
  
-Découvrez le projet ici : [Lien vers l'application](http://3.228.168.7:8501) *(Disponible uniquement de 8h à 19h pour optimiser les coûts).*
+Découvrez le projet ici : [Lien vers l'application](http://3.228.168.7:8501)
+
+# Démo
+[Voir la démo vidéo sur YouTube](https://www.youtube.com/watch?v=KCOTBHEBhno)
 
 # Table des Matières
 1. [Introduction](#introduction)
@@ -58,7 +61,7 @@ Ce projet s'inscrit dans un contexte professionnel en mettant en avant des comp�
 - **Traitement des données dans le cloud** : Utilisation d'Amazon S3 pour un stockage optimisé.
 - **Visualisation interactive** : Streamlit pour afficher des indicateurs clés de performance (KPI) et des graphiques interactifs.
 
-**Consultez l'application Streamlit** : [RetailInsights-Simulator](http://3.228.168.7:8501) *(Disponible uniquement de 8h à 19h pour optimiser les coûts).*
+**Consultez l'application Streamlit** : [RetailInsights-Simulator](http://3.228.168.7:8501)
 
 L'objectif principal est de fournir un exemple concret d'une architecture data engineering moderne, capable de gérer des pipelines complexes et d'offrir des insights exploitables pour des prises de décision stratégiques.
 
@@ -87,7 +90,7 @@ Le projet **RetailInsights-Simulator** repose sur une architecture claire et mod
 5. **Visualisation Interactive (Streamlit)** :
    - Streamlit consomme les données transformées stockées sur S3 pour afficher des KPI et des graphiques interactifs.
    - Les visualisations fournissent une vue d’ensemble des performances retail, avec des métriques comme le chiffre d’affaires et la marge brute.
-   - **Optimisation des coûts** : L’instance EC2 hébergeant Streamlit est active uniquement de 8h à 19h, grâce à AWS EventBridge et Lambda.
+   - **Optimisation des coûts** : L’instance EC2 hébergeant Streamlit est active uniquement aux horaires de bureaux, grâce à AWS EventBridge et Lambda.
 
 6. **CI/CD et Déploiement (AWS EC2 et GitHub Actions)** :
    - Un serveur EC2 héberge l’application Streamlit et le serveur Airflow.
@@ -309,7 +312,7 @@ Le projet **RetailInsights-Simulator** utilise un pipeline CI/CD robuste pour ga
 - **Rôle** : Hébergement des applications Airflow et Streamlit.
 - **Optimisation des coûts** :
   - L'instance EC2 utilisée pour Airflow est configurée pour fonctionner uniquement pendant les périodes de traitement (25 minutes par jour).
-  - L'instance EC2 hébergeant Streamlit est active uniquement de 8h à 19h, réduisant significativement les frais.
+  - L'instance EC2 hébergeant Streamlit est active uniquement aux horaires de bureaux, réduisant significativement les frais.
 - **Automatisation** :
   - Les démarrages et arrêts des instances EC2 sont gérés via **AWS EventBridge** et **AWS Lambda**.
 

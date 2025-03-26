@@ -8,3 +8,26 @@ venv
 data
 data_api
 .env
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+.crash
+*.tfvars
+*.tfvars.json
+.coverage
+REAL.md
+StockageS3.docx
+a.py
+archi.docx
+automate_process.py
+aws-java-sdk-bundle.jar
+b.py
+cloud.py
+coverage.xml
+hadoop-aws.jar
+jars/
+src/data_processing/extract/lecture.py
+src/data_processing/extract/lecture_S3.py
+src/data_processing/transform/agg.py
