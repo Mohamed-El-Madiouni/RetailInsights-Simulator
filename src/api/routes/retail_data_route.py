@@ -85,7 +85,7 @@ async def get_visitors(date: str):
 
     # Filtrer les données pour inclure uniquement celles correspondant à la date
     response = [
-        RetailResponse(
+        RetailDataResponse(
             store_id=entry["store_id"],
             store_name=entry["store_name"],
             date=entry["date"],
